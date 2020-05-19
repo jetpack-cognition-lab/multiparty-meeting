@@ -61,21 +61,21 @@ const peers = new Map();
 // TLS server configuration.
 const tls =
 {
-	cert          : fs.readFileSync(config.tls.cert),
-	key           : fs.readFileSync(config.tls.key),
-	secureOptions : 'tlsv12',
-	ciphers       :
-	[
-		'ECDHE-ECDSA-AES128-GCM-SHA256',
-		'ECDHE-RSA-AES128-GCM-SHA256',
-		'ECDHE-ECDSA-AES256-GCM-SHA384',
-		'ECDHE-RSA-AES256-GCM-SHA384',
-		'ECDHE-ECDSA-CHACHA20-POLY1305',
-		'ECDHE-RSA-CHACHA20-POLY1305',
-		'DHE-RSA-AES128-GCM-SHA256',
-		'DHE-RSA-AES256-GCM-SHA384'
-	].join(':'),
-	honorCipherOrder : true
+	cert: fs.readFileSync(config.tls.cert),
+	key: fs.readFileSync(config.tls.key),
+	secureOptions: 'tlsv12',
+	ciphers:
+		[
+			'ECDHE-ECDSA-AES128-GCM-SHA256',
+			'ECDHE-RSA-AES128-GCM-SHA256',
+			'ECDHE-ECDSA-AES256-GCM-SHA384',
+			'ECDHE-RSA-AES256-GCM-SHA384',
+			'ECDHE-ECDSA-CHACHA20-POLY1305',
+			'ECDHE-RSA-CHACHA20-POLY1305',
+			'DHE-RSA-AES128-GCM-SHA256',
+			'DHE-RSA-AES256-GCM-SHA384'
+		].join(':'),
+	honorCipherOrder: true
 };
 
 const app = express();
@@ -87,15 +87,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const session = expressSession({
-	secret            : config.cookieSecret,
-	name              : config.cookieName,
-	resave            : true,
-	saveUninitialized : true,
-	store             : new RedisStore({ client: redisClient }),
-	cookie            : {
-		secure   : true,
-		httpOnly : true,
-		maxAge   : 60 * 60 * 1000 // Expire after 1 hour since last request from user
+	secret: config.cookieSecret,
+	name: config.cookieName,
+	resave: true,
+	saveUninitialized: true,
+	store: new RedisStore({ client: redisClient }),
+	cookie: {
+		secure: true,
+		httpOnly: true,
+		maxAge: 60 * 60 * 1000 // Expire after 1 hour since last request from user
 	}
 });
 
@@ -105,13 +105,11 @@ if (config.trustProxy) {
 
 app.use(session);
 
-passport.serializeUser((user, done) =>
-{
+passport.serializeUser((user, done) => {
 	done(null, user);
 });
 
-passport.deserializeUser((user, done) =>
-{
+passport.deserializeUser((user, done) => {
 	done(null, user);
 });
 
@@ -120,17 +118,14 @@ let io;
 let oidcClient;
 let oidcStrategy;
 
-async function run()
-{
+async function run() {
 	// Open the interactive server.
 	await interactiveServer(rooms, peers);
 
-	if (typeof(config.auth) === 'undefined')
-	{
+	if (typeof (config.auth) === 'undefined') {
 		logger.warn('Auth is not configured properly!');
 	}
-	else
-	{
+	else {
 		await setupAuth();
 	}
 
@@ -144,65 +139,53 @@ async function run()
 	await runWebSocketServer();
 
 	// Log rooms status every 30 seconds.
-	setInterval(() =>
-	{
-		for (const room of rooms.values())
-		{
+	setInterval(() => {
+		for (const room of rooms.values()) {
 			room.logStatus();
 		}
 	}, 120000);
 
 	// check for deserted rooms
-	setInterval(() =>
-	{
-		for (const room of rooms.values())
-		{
+	setInterval(() => {
+		for (const room of rooms.values()) {
 			room.checkEmpty();
 		}
 	}, 10000);
 }
 
-function setupLTI(ltiConfig)
-{
+function setupLTI(ltiConfig) {
 
 	// Add redis nonce store
 	ltiConfig.nonceStore = new imsLti.Stores.RedisStore(ltiConfig.consumerKey, redisClient);
-	ltiConfig.passReqToCallback= true;
+	ltiConfig.passReqToCallback = true;
 
 	const ltiStrategy = new LTIStrategy(
 		ltiConfig,
-		(req, lti, done) =>
-		{
+		(req, lti, done) => {
 			// LTI launch parameters
-			if (lti)
-			{
+			if (lti) {
 				const user = {};
 
-				if (lti.user_id && lti.custom_room)
-				{
+				if (lti.user_id && lti.custom_room) {
 					user.id = lti.user_id;
 					user._lti = lti;
 				}
 
-				if (lti.custom_room)
-				{
+				if (lti.custom_room) {
 					user.room = lti.custom_room;
 				}
-				else
-				{
+				else {
 					user.room = '';
 				}
-				if (lti.lis_person_name_full)
-				{
-					user.displayName=lti.lis_person_name_full;
+				if (lti.lis_person_name_full) {
+					user.displayName = lti.lis_person_name_full;
 				}
 
 				// Perform local authentication if necessary
 				return done(null, user);
 
 			}
-			else
-			{
+			else {
 				return done('LTI error');
 			}
 
@@ -212,8 +195,7 @@ function setupLTI(ltiConfig)
 	passport.use('lti', ltiStrategy);
 }
 
-function setupOIDC(oidcIssuer)
-{
+function setupOIDC(oidcIssuer) {
 
 	oidcClient = new oidcIssuer.Client(config.auth.oidc.clientOptions);
 
@@ -235,58 +217,48 @@ function setupOIDC(oidcIssuer)
 
 	oidcStrategy = new Strategy(
 		{ client: oidcClient, params, passReqToCallback, usePKCE },
-		(tokenset, userinfo, done) =>
-		{
+		(tokenset, userinfo, done) => {
 			const user =
 			{
-				id        : tokenset.claims.sub,
-				provider  : tokenset.claims.iss,
-				_userinfo : userinfo,
-				_claims   : tokenset.claims
+				id: tokenset.claims.sub,
+				provider: tokenset.claims.iss,
+				_userinfo: userinfo,
+				_claims: tokenset.claims
 			};
 
-			if (userinfo.picture != null)
-			{
-				if (!userinfo.picture.match(/^http/g))
-				{
+			if (userinfo.picture != null) {
+				if (!userinfo.picture.match(/^http/g)) {
 					user.picture = `data:image/jpeg;base64, ${userinfo.picture}`;
 				}
-				else
-				{
+				else {
 					user.picture = userinfo.picture;
 				}
 			}
 
-			if (userinfo.nickname != null)
-			{
+			if (userinfo.nickname != null) {
 				user.displayName = userinfo.nickname;
 			}
 
-			if (userinfo.name != null)
-			{
+			if (userinfo.name != null) {
 				user.displayName = userinfo.name;
 			}
 
-			if (userinfo.email != null)
-			{
+			if (userinfo.email != null) {
 				user.email = userinfo.email;
 			}
 
-			if (userinfo.given_name != null)
-			{
-				user.name={};
+			if (userinfo.given_name != null) {
+				user.name = {};
 				user.name.givenName = userinfo.given_name;
 			}
 
-			if (userinfo.family_name != null)
-			{
-				if (user.name == null) user.name={};
+			if (userinfo.family_name != null) {
+				if (user.name == null) user.name = {};
 				user.name.familyName = userinfo.family_name;
 			}
 
-			if (userinfo.middle_name != null)
-			{
-				if (user.name == null) user.name={};
+			if (userinfo.middle_name != null) {
+				if (user.name == null) user.name = {};
 				user.name.middleName = userinfo.middle_name;
 			}
 
@@ -297,22 +269,20 @@ function setupOIDC(oidcIssuer)
 	passport.use('oidc', oidcStrategy);
 }
 
-async function setupAuth()
-{
+async function setupAuth() {
 	// LTI
 	if (
-		typeof(config.auth.lti) !== 'undefined' &&
-		typeof(config.auth.lti.consumerKey) !== 'undefined' &&
-		typeof(config.auth.lti.consumerSecret) !== 'undefined'
-	) 	setupLTI(config.auth.lti);
+		typeof (config.auth.lti) !== 'undefined' &&
+		typeof (config.auth.lti.consumerKey) !== 'undefined' &&
+		typeof (config.auth.lti.consumerSecret) !== 'undefined'
+	) setupLTI(config.auth.lti);
 
 	// OIDC
 	if (
-		typeof(config.auth.oidc) !== 'undefined' &&
-		typeof(config.auth.oidc.issuerURL) !== 'undefined' &&
-		typeof(config.auth.oidc.clientOptions) !== 'undefined'
-	)
-	{
+		typeof (config.auth.oidc) !== 'undefined' &&
+		typeof (config.auth.oidc.issuerURL) !== 'undefined' &&
+		typeof (config.auth.oidc.clientOptions) !== 'undefined'
+	) {
 		const oidcIssuer = await Issuer.discover(config.auth.oidc.issuerURL);
 
 		// Setup authentication
@@ -324,11 +294,10 @@ async function setupAuth()
 	app.use(passport.session());
 
 	// loginparams
-	app.get('/auth/login', (req, res, next) =>
-	{
+	app.get('/auth/login', (req, res, next) => {
 		passport.authenticate('oidc', {
-			state : base64.encode(JSON.stringify({
-				id : req.query.id
+			state: base64.encode(JSON.stringify({
+				id: req.query.id
 			}))
 		})(req, res, next);
 	});
@@ -336,15 +305,13 @@ async function setupAuth()
 	// lti launch
 	app.post('/auth/lti',
 		passport.authenticate('lti', { failureRedirect: '/' }),
-		(req, res) =>
-		{
+		(req, res) => {
 			res.redirect(`/${req.user.room}`);
 		}
 	);
 
 	// logout
-	app.get('/auth/logout', (req, res) =>
-	{
+	app.get('/auth/logout', (req, res) => {
 		req.logout();
 		req.session.destroy(() => res.send(logoutHelper()));
 	});
@@ -353,15 +320,13 @@ async function setupAuth()
 	app.get(
 		'/auth/callback',
 		passport.authenticate('oidc', { failureRedirect: '/auth/login' }),
-		(req, res) =>
-		{
+		(req, res) => {
 			const state = JSON.parse(base64.decode(req.query.state));
 
 			let displayName;
 			let picture;
 
-			if (req.user != null)
-			{
+			if (req.user != null) {
 				if (req.user.displayName != null)
 					displayName = req.user.displayName;
 				else
@@ -385,19 +350,52 @@ async function setupAuth()
 			}));
 		}
 	);
+
 }
 
-async function runHttpsServer()
-{
+async function runHttpsServer() {
 	app.use(compression());
 
 	app.use('/.well-known/acme-challenge', express.static('public/.well-known/acme-challenge'));
 
-	app.all('*', async (req, res, next) =>
-	{
-		if (req.secure || config.httpOnly )
-		{
-			const ltiURL = new URL(`${req.protocol }://${ req.get('host') }${req.originalUrl}`);
+	app.post('/rooms/:roomId/broadcasters', async (req, res, next) => {
+		const {
+			id,
+			displayName,
+			device,
+			rtpCapabilities
+		} = req.body;
+
+		try {
+			const room = await getOrCreateRoom({ roomId: req.params.roomId });
+			const data = await room.createBroadcaster(
+				{
+					id,
+					displayName,
+					device,
+					rtpCapabilities
+				});
+
+			res.status(200).json(data);
+		}
+		catch (error) {
+			next(error);
+		}
+	});
+
+	app.get('/rooms/:roomId', async (req, res, next) => {
+		try {
+			const room = await getOrCreateRoom({ roomId: req.params.roomId });
+			const data = room.getRouterRtpCapabilities();
+			res.status(200).json(data);
+		} catch (error) {
+			next(error);
+		}
+	});
+
+	app.all('*', async (req, res, next) => {
+		if (req.secure || config.httpOnly) {
+			const ltiURL = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
 
 			if (
 				req.isAuthenticated &&
@@ -405,8 +403,7 @@ async function runHttpsServer()
 				req.user.displayName &&
 				!ltiURL.searchParams.get('displayName') &&
 				!isPathAlreadyTaken(req.url)
-			)
-			{
+			) {
 
 				ltiURL.searchParams.append('displayName', req.user.displayName);
 
@@ -425,46 +422,42 @@ async function runHttpsServer()
 
 	app.use((req, res) => res.sendFile(`${__dirname}/public/index.html`));
 
-	if (config.httpOnly === true)
-	{
+	if (config.httpOnly === true) {
 		// http
 		mainListener = http.createServer(app);
 	}
-	else
-	{
+	else {
 		// https
 		mainListener = spdy.createServer(tls, app);
 
 		// http
 		const redirectListener = http.createServer(app);
 
-		if(config.listeningHost)
+		if (config.listeningHost)
 			redirectListener.listen(config.listeningRedirectPort, config.listeningHost);
 		else
 			redirectListener.listen(config.listeningRedirectPort);
 	}
 
 	// https or http
-	if(config.listeningHost)	
+	if (config.listeningHost)
 		mainListener.listen(config.listeningPort, config.listeningHost);
 	else
 		mainListener.listen(config.listeningPort);
 }
 
-function isPathAlreadyTaken(url)
-{
+function isPathAlreadyTaken(url) {
 	const alreadyTakenPath =
-	[
-		'/config/',
-		'/static/',
-		'/images/',
-		'/sounds/',
-		'/favicon.',
-		'/auth/'
-	];
+		[
+			'/config/',
+			'/static/',
+			'/images/',
+			'/sounds/',
+			'/favicon.',
+			'/auth/'
+		];
 
-	alreadyTakenPath.forEach((path) =>
-	{
+	alreadyTakenPath.forEach((path) => {
 		if (url.toString().startsWith(path))
 			return true;
 	});
@@ -475,23 +468,20 @@ function isPathAlreadyTaken(url)
 /**
  * Create a WebSocketServer to allow WebSocket connections from browsers.
  */
-async function runWebSocketServer()
-{
+async function runWebSocketServer() {
 	io = require('socket.io')(mainListener);
 
 	io.use(
 		sharedSession(session, {
-			autoSave : true
+			autoSave: true
 		})
 	);
 
 	// Handle connections from clients.
-	io.on('connection', (socket) =>
-	{
+	io.on('connection', (socket) => {
 		const { roomId, peerId } = socket.handshake.query;
 
-		if (!roomId || !peerId)
-		{
+		if (!roomId || !peerId) {
 			logger.warn('connection request without roomId and/or peerId');
 
 			socket.disconnect(true);
@@ -502,8 +492,7 @@ async function runWebSocketServer()
 		logger.info(
 			'connection request [roomId:"%s", peerId:"%s"]', roomId, peerId);
 
-		queue.push(async () =>
-		{
+		queue.push(async () => {
 			const room = await getOrCreateRoom({ roomId });
 			const peer = new Peer({ id: peerId, socket });
 
@@ -513,8 +502,7 @@ async function runWebSocketServer()
 
 			room.handlePeer(peer);
 		})
-			.catch((error) =>
-			{
+			.catch((error) => {
 				logger.error('room creation or room joining failed [error:"%o"]', error);
 
 				socket.disconnect(true);
@@ -527,24 +515,21 @@ async function runWebSocketServer()
 /**
  * Launch as many mediasoup Workers as given in the configuration file.
  */
-async function runMediasoupWorkers()
-{
+async function runMediasoupWorkers() {
 	const { numWorkers } = config.mediasoup;
 
 	logger.info('running %d mediasoup Workers...', numWorkers);
 
-	for (let i = 0; i < numWorkers; ++i)
-	{
+	for (let i = 0; i < numWorkers; ++i) {
 		const worker = await mediasoup.createWorker(
 			{
-				logLevel   : config.mediasoup.worker.logLevel,
-				logTags    : config.mediasoup.worker.logTags,
-				rtcMinPort : config.mediasoup.worker.rtcMinPort,
-				rtcMaxPort : config.mediasoup.worker.rtcMaxPort
+				logLevel: config.mediasoup.worker.logLevel,
+				logTags: config.mediasoup.worker.logTags,
+				rtcMinPort: config.mediasoup.worker.rtcMinPort,
+				rtcMaxPort: config.mediasoup.worker.rtcMaxPort
 			});
 
-		worker.on('died', () =>
-		{
+		worker.on('died', () => {
 			logger.error(
 				'mediasoup Worker died, exiting  in 2 seconds... [pid:%d]', worker.pid);
 
@@ -558,8 +543,7 @@ async function runMediasoupWorkers()
 /**
  * Get next mediasoup Worker.
  */
-function getMediasoupWorker()
-{
+function getMediasoupWorker() {
 	const worker = mediasoupWorkers[nextMediasoupWorkerIdx];
 
 	if (++nextMediasoupWorkerIdx === mediasoupWorkers.length)
@@ -571,13 +555,11 @@ function getMediasoupWorker()
 /**
  * Get a Room instance (or create one if it does not exist).
  */
-async function getOrCreateRoom({ roomId })
-{
+async function getOrCreateRoom({ roomId }) {
 	let room = rooms.get(roomId);
 
 	// If the Room does not exist create a new one.
-	if (!room)
-	{
+	if (!room) {
 		logger.info('creating a new Room [roomId:"%s"]', roomId);
 
 		const mediasoupWorker = getMediasoupWorker();
