@@ -358,6 +358,26 @@ async function runHttpsServer() {
 
 	app.use('/.well-known/acme-challenge', express.static('public/.well-known/acme-challenge'));
 
+	app.param(
+		'roomId', async (req, res, next, roomId) => {
+			// The room must exist for all API requests.
+
+			const room = await getOrCreateRoom({ roomId });
+
+			req.room = room
+
+			// if (!rooms.has(roomId)) {
+			// 	const error = new Error(`room with id "${roomId}" not found`);
+
+			// 	error.status = 404;
+			// 	throw error;
+			// }
+
+			// req.room = rooms.get(roomId);
+
+			next();
+		});
+
 	app.post('/rooms/:roomId/broadcasters', async (req, res, next) => {
 		const {
 			id,
@@ -385,13 +405,21 @@ async function runHttpsServer() {
 
 	app.get('/rooms/:roomId', async (req, res, next) => {
 		try {
-			const room = await getOrCreateRoom({ roomId: req.params.roomId });
-			const data = room.getRouterRtpCapabilities();
+			const data = req.room.getRouterRtpCapabilities();
 			res.status(200).json(data);
 		} catch (error) {
 			next(error);
 		}
 	});
+
+	app.delete(
+		'/rooms/:roomId/broadcasters/:broadcasterId', (req, res) => {
+			const { broadcasterId } = req.params;
+
+			req.room.deleteBroadcaster({ broadcasterId });
+
+			res.status(200).send('broadcaster deleted');
+		});
 
 	app.all('*', async (req, res, next) => {
 		if (req.secure || config.httpOnly) {

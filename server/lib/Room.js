@@ -78,6 +78,10 @@ class Room extends EventEmitter {
 
 		this._handleLobby();
 		this._handleAudioLevelObserver();
+
+		// special broadcasters
+		this._broadcasters = new Map();
+
 	}
 
 	isLocked() {
@@ -375,7 +379,7 @@ class Room extends EventEmitter {
 
 			case 'join':
 				{
-
+					logger.info("======================================================", request.data)
 					try {
 						if (peer.socket.handshake.session.passport.user.displayName) {
 							this._notification(
@@ -507,7 +511,50 @@ class Room extends EventEmitter {
 					break;
 				}
 
+			case 'createPlainTransport':
+				{
+					const plainTransportOptions =
+					{
+						...config.mediasoup.plainTransport,
+						rtcpMux: false,
+						comedia: true
+					};
+
+					const transport = await this._mediasoupRouter.createPlainTransport(
+						plainTransportOptions
+					);
+
+					// Store it.
+					peer.addTransport(transport.id, transport);
+
+					cb(null,
+						{
+							id: transport.id,
+							ip: transport.tuple.localIp,
+							port: transport.tuple.localPort,
+							rtcpPort: transport.rtcpTuple ? transport.rtcpTuple.localPort : undefined
+						}
+					)
+					break;
+				}
+
 			case 'connectWebRtcTransport':
+				{
+					const { transportId, dtlsParameters } = request.data;
+					const transport = peer.getTransport(transportId);
+
+					if (!transport)
+						throw new Error(`transport with id "${transportId}" not found`);
+
+					await transport.connect({ dtlsParameters });
+
+					cb();
+
+					break;
+				}
+
+			// not needed with comedia configured
+			case 'connectPlainTransport':
 				{
 					const { transportId, dtlsParameters } = request.data;
 					const transport = peer.getTransport(transportId);
@@ -539,6 +586,7 @@ class Room extends EventEmitter {
 
 			case 'produce':
 				{
+					// logger.info(peer)
 					// Ensure the Peer is joined.
 					if (!peer.joined)
 						throw new Error('Peer not yet joined');
