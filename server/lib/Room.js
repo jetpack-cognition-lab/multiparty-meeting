@@ -513,11 +513,14 @@ class Room extends EventEmitter {
 
 			case 'createPlainTransport':
 				{
+					const { forceTcp, producing, consuming } = request.data;
+
 					const plainTransportOptions =
 					{
 						...config.mediasoup.plainTransport,
 						rtcpMux: false,
-						comedia: true
+						comedia: true,
+						appData: { producing, consuming }
 					};
 
 					const transport = await this._mediasoupRouter.createPlainTransport(
@@ -556,13 +559,13 @@ class Room extends EventEmitter {
 			// not needed with comedia configured
 			case 'connectPlainTransport':
 				{
-					const { transportId, dtlsParameters } = request.data;
+					const { transportId, ip, port } = request.data;
 					const transport = peer.getTransport(transportId);
 
 					if (!transport)
 						throw new Error(`transport with id "${transportId}" not found`);
 
-					await transport.connect({ dtlsParameters });
+					await transport.connect({ ip, port });
 
 					cb();
 
@@ -623,6 +626,7 @@ class Room extends EventEmitter {
 
 					// Optimization: Create a server-side Consumer for each Peer.
 					for (const otherPeer of this._getJoinedPeers({ excludePeer: peer })) {
+						logger.info("createing server side consumer ~~~~~~~~~~~~~~~~~~~~~~~~  ", peer, otherPeer)
 						this._createConsumer(
 							{
 								consumerPeer: otherPeer,
@@ -632,6 +636,7 @@ class Room extends EventEmitter {
 					}
 
 					// Add into the audioLevelObserver.
+					logger.info("adding producer to audiolevel observer ~~~~~~~~~~~~~~~~~~~~~~~~")
 					if (kind === 'audio') {
 						this._audioLevelObserver.addProducer({ producerId: producer.id })
 							.catch(() => { });
@@ -1067,7 +1072,7 @@ class Room extends EventEmitter {
 	 * @async
 	 */
 	async _createConsumer({ consumerPeer, producerPeer, producer }) {
-		logger.debug(
+		logger.info(
 			'_createConsumer() [consumerPeer:"%s", producerPeer:"%s", producer:"%s"]',
 			consumerPeer.id,
 			producerPeer.id,
