@@ -60,24 +60,8 @@ async function main() {
   const joinRoom = async function () {
     const displayName = "Dr. Schlunzmayer"
 
-    const joinresp = await sendRequest(
-      'join',
-      {
-        displayName: displayName,
-        rtpCapabilities: {
-          codecs:
-            [],
-          headerExtensions:
-            []
-        }
-      }
-    )
-
-    console.log(joinresp)
-
     // get the rtp caps 
     const routerRtpCapabilities = await sendRequest('getRouterRtpCapabilities');
-    // console.log("routerRtpCapabilities: ", routerRtpCapabilities)
 
     // create a transport for audio
     const audioTransportInfo = await sendRequest(
@@ -110,69 +94,60 @@ async function main() {
 
     console.log("video transportInfo:", videoTransportInfo)
 
-    // CONNECT not needed for plain transport 
-    // if it was created with comedia option set to true.
-
-    // // connect audio
-    // await sendRequest(
-    //   'connectPlainTransport',
-    //   {
-    //     transportId: audioTransportId,
-    //     dtlsParameters
-    //   }
-    // )
-    // console.log("connected audio transport id " + audioTransportId)
-
-    // connect video
-    // await sendRequest(
-    //   'connectPlainTransport',
-    //   {
-    //     transportId: videoTransportId,
-    //     dtlsParameters
-    //   }
-    // )
-    // console.log("connected video transport id " + videoTransportId)
-
-
-    // payload scraped from chrome
-    // const x = {
-    //   "transportId": "fc29d873-833f-4837-9d2d-f9d3a0b24336",
-    //   "kind": "audio",
-    //   "rtpParameters": {
-    //     "codecs": [
-    //       {
-    //         "mimeType": "audio/opus",
-    //         "payloadType": 111,
-    //         "clockRate": 48000,
-    //         "channels": 2,
-    //         "parameters": {
-    //           "minptime": 10,
-    //           "useinbandfec": 1,
-    //           "sprop-stereo": 1,
-    //           "usedtx": 1
-    //         },
-    //         "rtcpFeedback": [
-    //           { "type": "transport-cc", "parameter": "" }
-    //         ]
-    //       }
-    //     ],
-    //     "headerExtensions": [
-    //       { "uri": "urn:ietf:params:rtp-hdrext:sdes:mid", "id": 4, "encrypt": false, "parameters": {} },
-    //       { "uri": "http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time", "id": 2, "encrypt": false, "parameters": {} },
-    //       { "uri": "http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01", "id": 3, "encrypt": false, "parameters": {} },
-    //       { "uri": "urn:ietf:params:rtp-hdrext:ssrc-audio-level", "id": 1, "encrypt": false, "parameters": {} }
-    //     ],
-    //     "encodings": [
-    //       { "ssrc": 95572979, "dtx": false }
-    //     ],
-    //     "rtcp": {
-    //       "cname": "UZMNzMKvYVw7OM2i",
-    //       "reducedSize": true
-    //     },
-    //     "mid": "0"
-    //   },
-    //   "appData": { "source": "mic" }
-    // }
+    const joinresp = await sendRequest(
+      'join',
+      {
+        displayName: displayName,
+        rtpCapabilities: {
+          codecs:
+            [{
+              'mimeType': 'audio/opus',
+              'clockRate': 48000,
+              'kind': 'audio',
+              'preferredPayloadType': 100,
+              'channels': 2,
+              'parameters': { 'useinbandfec': 1 },
+              'rtcpFeedback': []
+            },
+            {
+              'mimeType': 'video/VP8',
+              'clockRate': 90000,
+              'kind': 'video',
+              'preferredPayloadType': 101,
+              'parameters': {},
+              'rtcpFeedback': [{ 'type': 'nack' }]
+            },
+            {
+              'mimeType': 'video/VP9',
+              'clockRate': 90000,
+              'kind': 'video',
+              'preferredPayloadType': 103,
+              'parameters': {},
+              'rtcpFeedback': [{ 'type': 'nack' }]
+            },
+            {
+              'mimeType': 'video/H264',
+              'clockRate': 90000,
+              'kind': 'video',
+              'preferredPayloadType': 107,
+              'parameters': { 'packetization-mode': 1, 'profile-level-id': '42e01f', 'level-asymmetry-allowed': 1 },
+              'rtcpFeedback': [{ 'type': 'nack' }]
+            },
+            {
+              'mimeType': 'video/H265',
+              'clockRate': 90000,
+              'kind': 'video',
+              'preferredPayloadType': 109,
+              'parameters': {},
+              'rtcpFeedback': [{ 'type': 'nack' }]
+            }
+            ],
+          headerExtensions:
+            []
+        }
+      }
+    )
+    console.log(joinresp)
 
     // produce
     const audioProducer = await sendRequest(
@@ -180,6 +155,9 @@ async function main() {
       {
         transportId: audioTransportId,
         kind: 'audio',
+        appData: {
+          source: 'mic'
+        },
         rtpParameters: {
           encodings: [
             {
@@ -209,45 +187,15 @@ async function main() {
     )
     console.log("audioproducer: ", audioProducer)
 
-    // payload scraped from chrome
-    // const x = {
-    //   "method": "produce",
-    //   "data": {
-    //     "transportId": "34d20cea-aab7-4782-a4d2-93bfac1825c3",
-    //     "kind": "video",
-    //     "rtpParameters": {
-    //       "codecs": [
-    //         { "mimeType": "video/VP8", "payloadType": 96, "clockRate": 90000, "parameters": {}, "rtcpFeedback": [{ "type": "goog-remb", "parameter": "" }, { "type": "transport-cc", "parameter": "" }, { "type": "ccm", "parameter": "fir" }, { "type": "nack", "parameter": "" }, { "type": "nack", "parameter": "pli" }] },
-    //         { "mimeType": "video/rtx", "payloadType": 97, "clockRate": 90000, "parameters": { "apt": 96 }, "rtcpFeedback": [] }
-    //       ],
-    //       "headerExtensions": [
-    //         { "uri": "urn:ietf:params:rtp-hdrext:sdes:mid", "id": 4, "encrypt": false, "parameters": {} },
-    //         { "uri": "urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id", "id": 5, "encrypt": false, "parameters": {} },
-    //         { "uri": "urn:ietf:params:rtp-hdrext:sdes:repaired-rtp-stream-id", "id": 6, "encrypt": false, "parameters": {} },
-    //         { "uri": "http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time", "id": 2, "encrypt": false, "parameters": {} },
-    //         { "uri": "http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01", "id": 3, "encrypt": false, "parameters": {} },
-    //         { "uri": "http://tools.ietf.org/html/draft-ietf-avtext-framemarking-07", "id": 8, "encrypt": false, "parameters": {} },
-    //         { "uri": "urn:3gpp:video-orientation", "id": 13, "encrypt": false, "parameters": {} },
-    //         { "uri": "urn:ietf:params:rtp-hdrext:toffset", "id": 14, "encrypt": false, "parameters": {} }
-    //       ],
-    //       "encodings": [
-    //         { "active": true, "scaleResolutionDownBy": 4, "rid": "r0", "scalabilityMode": "S1T3", "dtx": false },
-    //         { "active": true, "scaleResolutionDownBy": 2, "rid": "r1", "scalabilityMode": "S1T3", "dtx": false },
-    //         { "active": true, "scaleResolutionDownBy": 1, "rid": "r2", "scalabilityMode": "S1T3", "dtx": false }
-    //       ],
-    //       "rtcp": { "cname": "", "reducedSize": true },
-    //       "mid": "1"
-    //     },
-    //     "appData": { "source": "webcam" }
-    //   }
-    // }
-
-
     const videoProducer = await sendRequest(
       'produce',
       {
         transportId: videoTransportId,
         kind: 'video',
+        appData: {
+          source: 'webcam'
+        },
+
         rtpParameters: {
           codecs: [
             {
@@ -279,12 +227,12 @@ async function main() {
       videoTransportRtcpPort,
       videoPt: 101,
       videoSSRC: 2222,
+      videoProducer,
       audioTransportIp,
       audioTransportPort,
       audioTransportRtcpPort,
       audioPt: 100,
       audioSSRC: 1111,
-      videoProducer,
       audioProducer
     }
   }
@@ -303,59 +251,61 @@ async function main() {
       audioSSRC
     } = opts
 
-    // const command = `gst-launch-1.0 \
-    // 	rtpbin name=rtpbin \
-    //   filesrc location=${MEDIA_FILE} \
-    //   ! qtdemux name=demux \
-    //   demux.video_0 \
-    //   ! queue \
-    //   ! decodebin \
-    //   ! videoconvert \
-    //   ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
-    //   ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
-    //   ! rtpbin.send_rtp_sink_0 \
-    //   rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
-    //   rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
-    //   demux.audio_0 \
-    //   ! queue \
-    //   ! decodebin \
-    //   ! audioresample \
-    //   ! audioconvert \
-    //   ! opusenc \
-    //   ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
-    //   ! rtpbin.send_rtp_sink_1 \
-    //   rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
-    //   rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false
-    // `
-
-    const command = `gst-launch-1.0 -v -m \
-      rtpbin name=rtpbin latency=200 rtp-profile=avpf \
-      audiotestsrc \
-        ! "audio/x-raw" \
-        ! audioresample \
-        ! "audio/x-raw",format=S16LE,rate=48000,channels=2 \
-        ! opusenc bitrate=128000 inband-fec=1 \
-        ! rtpopuspay ssrc=${audioSSRC} pt=${audioPt} mtu=1400 \
-        ! rtprtxqueue name=rtprtxqueue max-size-time=400 max-size-packets=0 \
-        ! rtpbin.send_rtp_sink_0 \
-      rtpbin.send_rtp_src_0 \
-        ! udpsink name=rtp_udpsink host=${audioTransportIp} port=${audioTransportPort} \
-      rtpbin.send_rtcp_src_0 \
-        ! udpsink name=rtcp_udpsink host=${audioTransportIp} port=${audioTransportPort} sync=false async=false\
+    const command = `gst-launch-1.0 \
+    	rtpbin name=rtpbin latency=200 rtp-profile=avpf \
+      filesrc location=/home/andi/Dropbox/abendschau_luise.mp4 \
+      ! qtdemux name=demux \
+      demux.video_0 \
+      ! queue \
+      ! decodebin \
+      ! videoconvert \
+      ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
+      ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
+      ! rtpbin.send_rtp_sink_0 \
+      rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
+      rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
+      demux.audio_0 \
+      ! queue \
+      ! decodebin \
+      ! audioresample \
+      ! audioconvert \
+      ! opusenc \
+      ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
+      ! rtpbin.send_rtp_sink_1 \
+      rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
+      rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false
     `
 
+    // jackpaudiosrc connect=1 port-pattern="system:capture_1(3|4)!
+
+    // const command = `gst-launch-1.0 -v -m \
+    //   rtpbin name=rtpbin latency=200 rtp-profile=avpf \
+    //   audiotestsrc \
+    //     ! "audio/x-raw" \
+    //     ! audioresample \
+    //     ! "audio/x-raw",format=S16LE,rate=48000,channels=2 \
+    //     ! opusenc bitrate=128000 inband-fec=1 \
+    //     ! rtpopuspay ssrc=${audioSSRC} pt=${audioPt} mtu=1400 \
+    //     ! rtprtxqueue name=rtprtxqueue max-size-time=400 max-size-packets=0 \
+    //     ! rtpbin.send_rtp_sink_0 \
+    //   rtpbin.send_rtp_src_0 \
+    //     ! udpsink name=rtp_udpsink host=${audioTransportIp} port=${audioTransportPort} \
+    //   rtpbin.send_rtcp_src_0 \
+    //     ! udpsink name=rtcp_udpsink host=${audioTransportIp} port=${audioTransportPort} sync=false async=false\
+    // `
+
     console.log(command)
-    // exec(command, (error, stdout, stderr) => {
-    //   if (error) {
-    //     console.log(`error: ${error.message}`);
-    //     return;
-    //   }
-    //   if (stderr) {
-    //     console.log(`stderr: ${stderr}`);
-    //     return;
-    //   }
-    //   console.log(`stdout: ${stdout}`);
-    // })
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.log(`error: ${error.message}`);
+        return;
+      }
+      if (stderr) {
+        console.log(`stderr: ${stderr}`);
+        return;
+      }
+      console.log(`stdout: ${stdout}`);
+    })
   }
 
   ////////////////////////////////////////
@@ -394,21 +344,6 @@ async function main() {
         case 'chatMessage':
           {
             const { peerId, chatMessage } = notification.data;
-
-            // store.dispatch(
-            //   chatActions.addResponseMessage({ ...chatMessage, peerId }));
-
-            // if (
-            //   !store.getState().toolarea.toolAreaOpen ||
-            //   (store.getState().toolarea.toolAreaOpen &&
-            //     store.getState().toolarea.currentToolTab !== 'chat')
-            // ) // Make sound
-            // {
-            //   store.dispatch(
-            //     roomActions.setToolbarsVisible(true));
-            //   this._soundNotification();
-            // }
-
             break;
           }
 
