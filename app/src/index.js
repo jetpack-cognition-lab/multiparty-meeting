@@ -14,12 +14,14 @@ import deviceInfo from './deviceInfo';
 import * as meActions from './actions/meActions';
 import ChooseRoom from './components/ChooseRoom';
 import LoadingView from './components/LoadingView';
-import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
+import { ThemeProvider } from '@material-ui/core/styles';
 import { PersistGate } from 'redux-persist/lib/integration/react';
 import { persistor, store } from './store';
 import { SnackbarProvider } from 'notistack';
 import * as serviceWorker from './serviceWorker';
 import { ReactLazyPreload } from './components/ReactLazyPreload';
+
+import { jetpack } from './themes'
 
 // import messagesEnglish from './translations/en';
 import messagesNorwegian from './translations/nb';
@@ -84,8 +86,6 @@ let roomClient;
 
 RoomClient.init({ store, intl });
 
-const theme = createMuiTheme(window.config.theme);
-
 let Router;
 
 if (isElectron())
@@ -143,7 +143,7 @@ function run()
 
 	render(
 		<Provider store={store}>
-			<MuiThemeProvider theme={theme}>
+			<ThemeProvider theme={jetpack}>
 				<RawIntlProvider value={intl}>
 					<PersistGate loading={<LoadingView />} persistor={persistor}>
 						<RoomContext.Provider value={roomClient}>
@@ -160,7 +160,7 @@ function run()
 						</RoomContext.Provider>
 					</PersistGate>
 				</RawIntlProvider>
-			</MuiThemeProvider>
+			</ThemeProvider>
 		</Provider>,
 		document.getElementById('multiparty-meeting')
 	);
