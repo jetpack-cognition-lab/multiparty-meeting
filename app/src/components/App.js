@@ -26,14 +26,14 @@ const App = (props) =>
 	if (!room.joined)
 	{
 		return (
-			<JoinDialog roomId={id} />
+      <JoinDialog roomId={id} />
 		);
 	}
 	else
 	{
 		return (
 			<Suspense fallback={<LoadingView />}>
-				<Room />
+        <Room />
 			</Suspense>
 		);
 	}
