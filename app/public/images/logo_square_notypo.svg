@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns="http://www.w3.org/2000/svg"
+   width="150"
+   height="150"
+   viewBox="0 0 153.45834 153.45834"
+   version="1.1"
+   id="svg41128"
+  >
+  <g
+     id="layer1"
+     transform="translate(-17.33866,-59.417268)">
+    <g
+       transform="matrix(0.50339953,0,0,0.50339953,-272.83497,64.792526)"
+       style="display:inline;stroke-width:3.73753405;stroke-miterlimit:4;stroke-dasharray:none;enable-background:new"
+       id="g6670-4-8">
+      <path
+         d="m 753.01742,132.07715 -29.00082,-9.66694 -19.33388,9.66694 v 19.33388 l 19.33388,29.00082 29.00082,9.66694 19.33388,-29.00082 z"
+         style="display:inline;fill:#2ecee5;fill-opacity:1;stroke:#000000;stroke-width:3.73753405;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         id="path22823-2-2" />
+      <path
+         d="m 695.01578,103.07633 9.66694,29.00082 19.33388,-9.66694 48.3347,-77.335525 -9.66694,-9.666941 -58.00164,48.334704 z"
+         style="display:inline;fill:#ff3380;fill-opacity:1;stroke:#000000;stroke-width:3.73753405;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         id="path22846-2-1" />
+      <path
+         d="m 627.34719,74.075507 -19.33388,9.666941 9.66694,19.333882 38.66777,29.00082 h 48.3347 l -9.66694,-29.00082 z"
+         style="display:inline;fill:#ffe500;fill-opacity:1;stroke:#000000;stroke-width:3.73753405;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         id="path22882-6-0" />
+      <path
+         d="m 820.68601,170.74491 -19.33389,-9.66694 H 772.3513 l -19.33388,29.00082 9.66694,9.66694 29.00082,9.66695 z"
+         style="display:inline;fill:#c1ff03;fill-opacity:1;stroke:#000000;stroke-width:3.73753405;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         id="path22897-4-5" />
+      <path
+         d="m 849.68683,199.74573 v 29.00083 l -29.00082,19.33388 -29.00083,-38.66776 29.00083,-38.66777 z"
+         style="display:inline;fill:#06ff00;fill-opacity:1;stroke:#040606;stroke-width:3.73753405;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         id="path22978-2-5" />
+    </g>
+  </g>
+</svg>
