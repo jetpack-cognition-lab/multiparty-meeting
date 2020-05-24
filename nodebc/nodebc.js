@@ -1,8 +1,8 @@
 const socketio = require('socket.io-client')
-//const gst = require('node-gstreamer-launch')
-const { exec } = require("child_process")
+const faker = require('faker')
+const execa = require('execa')
 
-const MEDIA_FILE = '/home/andi/Dropbox/abendschau_luise.mp4'
+//const gst = require('node-gstreamer-launch')
 
 async function main() {
 
@@ -58,8 +58,6 @@ async function main() {
   }
 
   const joinRoom = async function () {
-    const displayName = "Dr. Schlunzmayer"
-
     // get the rtp caps 
     const routerRtpCapabilities = await sendRequest('getRouterRtpCapabilities');
 
@@ -237,7 +235,7 @@ async function main() {
     }
   }
 
-  const startGst = function (opts) {
+  const startJackGst = function (opts) {
     const {
       videoTransportIp,
       videoTransportPort,
@@ -248,69 +246,218 @@ async function main() {
       audioTransportPort,
       audioTransportRtcpPort,
       audioPt,
-      audioSSRC
+      audioSSRC,
     } = opts
 
-    const command = `gst-launch-1.0 \
-    	rtpbin name=rtpbin latency=200 rtp-profile=avpf \
-      filesrc location=/home/andi/Dropbox/abendschau_luise.mp4 \
-      ! qtdemux name=demux \
-      demux.video_0 \
-      ! queue \
-      ! decodebin \
-      ! videoconvert \
-      ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
-      ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
-      ! rtpbin.send_rtp_sink_0 \
-      rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
-      rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
-      demux.audio_0 \
-      ! queue \
-      ! decodebin \
-      ! audioresample \
-      ! audioconvert \
-      ! opusenc \
-      ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
-      ! rtpbin.send_rtp_sink_1 \
-      rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
-      rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false
+    const command = `gst-launch-1.0 -v -m \
+      rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
+      jackaudiosrc connect=1 port-pattern="system:capture_1(3|4)" \
+        ! audioconvert \
+        ! audioresample \
+        ! audiorate \
+        ! audio/x-raw,format=S16LE,rate=48000,channels=2 \
+        ! opusenc bitrate=128000 inband-fec=1 \
+        ! rtpopuspay ssrc=${audioSSRC} pt=${audioPt} mtu=1400 \
+        ! rtprtxqueue name=rtprtxqueue max-size-time=400 max-size-packets=0 \
+        ! rtpbin.send_rtp_sink_0 \
+      rtpbin.send_rtp_src_0 \
+        ! udpsink name=rtp_udpsink host=${audioTransportIp} port=${audioTransportPort} \
+      rtpbin.send_rtcp_src_0 \
+        ! udpsink name=rtcp_udpsink host=${audioTransportIp} port=${audioTransportPort} sync=false async=false\
     `
+    console.log(command)
+    execGstCommand(command)
+  }
 
-    // jackpaudiosrc connect=1 port-pattern="system:capture_1(3|4)!
+  const startYoutubeGst = async function (opts) {
+    const {
+      videoTransportIp,
+      videoTransportPort,
+      videoTransportRtcpPort,
+      videoPt,
+      videoSSRC,
+      audioTransportIp,
+      audioTransportPort,
+      audioTransportRtcpPort,
+      audioPt,
+      audioSSRC,
+      url
+    } = opts
 
-    // const command = `gst-launch-1.0 -v -m \
-    //   rtpbin name=rtpbin latency=200 rtp-profile=avpf \
-    //   audiotestsrc \
-    //     ! "audio/x-raw" \
-    //     ! audioresample \
-    //     ! "audio/x-raw",format=S16LE,rate=48000,channels=2 \
-    //     ! opusenc bitrate=128000 inband-fec=1 \
-    //     ! rtpopuspay ssrc=${audioSSRC} pt=${audioPt} mtu=1400 \
-    //     ! rtprtxqueue name=rtprtxqueue max-size-time=400 max-size-packets=0 \
+
+    // const command = `/usr/bin/gst-launch-1.0 \
+    //   rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
+    //   souphttpsrc is-live=true location="$(youtube-dl -f 18 --get-url ${url})' \
+    //     ! qtdemux name=demux \
+    //   demux.video_0 \
+    //     ! queue \
+    //     ! decodebin \
+    //     ! videoconvert \
+    //     ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
+    //     ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
     //     ! rtpbin.send_rtp_sink_0 \
-    //   rtpbin.send_rtp_src_0 \
-    //     ! udpsink name=rtp_udpsink host=${audioTransportIp} port=${audioTransportPort} \
-    //   rtpbin.send_rtcp_src_0 \
-    //     ! udpsink name=rtcp_udpsink host=${audioTransportIp} port=${audioTransportPort} sync=false async=false\
+    //   rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
+    //   rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
+    //   \
+    //   demux.audio_0 \
+    //     ! queue ! avdec_aac ! audioconvert \
+    //     ! decodebin \
+    //     ! audioresample \
+    //     ! audioconvert \
+    //     ! opusenc \
+    //     ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
+    //     ! rtpbin.send_rtp_sink_1 \
+    //   rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
+    //   rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
     // `
 
-    console.log(command)
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.log(`error: ${error.message}`);
-        return;
+    ytdlcmd = [
+      '-f 18', 
+      '--get-url',
+      url 
+    ]
+
+    console.log('getting yturl')
+    const ytres = await execa('/usr/bin/youtube-dl', ytdlcmd)
+    console.log('got it', ytres.stdout)
+    const yturl = ytres.stdout
+
+    pipeline = [
+      `rtpbin name=rtpbin latency=1000 rtp-profile=avpf`,
+      `souphttpsrc is-live=true location='${yturl}'`,
+        `! qtdemux name=demux`,
+      `demux.video_0`,
+        `! queue`,
+        `! decodebin`,
+        `! videoconvert`,
+        `! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4`,
+        `! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2`,
+        `! rtpbin.send_rtp_sink_0`,
+      `rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort}`,
+      `rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false`,
+
+      `demux.audio_0`,
+        `! queue ! avdec_aac ! audioconvert`,
+        `! decodebin`,
+        `! audioresample`,
+        `! audioconvert`,
+        `! opusenc`,
+        `! rtpopuspay pt=${audioPt} ssrc=${audioSSRC}`,
+        `! rtpbin.send_rtp_sink_1`,
+      `rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort}`,
+      `rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false`,
+    ]
+
+
+    // https://www.youtube.com/watch?v=QNIIOr3g8lQ
+
+    // console.log(pipeline)
+    execGstCommand(pipeline)
+  }
+
+  const execGstCommand = async function(pipeline) {
+    // pipeline = pipeline.map(l => l.replace(/\?/g, '\\?').replace(/\&/g, '\\&'))
+    try {
+      const result = await execa('/usr/bin/gst-launch-1.0', pipeline, {env: {'GST_DEBUG': '4'}})
+      // result.on('exit', () => {
+      //   console.log("exited", result)
+      //   state.gstProcess = null
+      //   state.playing = false
+      // })
+      state.gstProcess = result
+      state.playing = true
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  const sendChatMessage = async function(message) {
+    await sendRequest(
+      'chatMessage',
+      {
+        chatMessage: {
+          type: "message",
+          text: message,
+          time: new Date().valueOf(),
+          name: displayName,
+          sender: 'response',
+          picture: null
+        }
       }
-      if (stderr) {
-        console.log(`stderr: ${stderr}`);
-        return;
+    )
+  }
+
+  const stopCurrentTrack = async function() {
+    console.log(state.gstProcess)
+    if (state.gstProcess) {
+      state.gstProcess.kill('SIGTERM', {
+        forceKillAfterTimeout: 2000
+      })
+    }
+    state.gstProcess = null
+    state.playing = false
+  }
+
+  const handleCommand = async function(command) {
+    if (!state.joined) {
+      console.log('Not joined')
+      return
+    }
+
+    // play command
+    if (matched = command.match(/^play (.*)/)) {
+      console.log("play command received")
+      const url = matched[1]
+      if (!url.match(/^(http(s)??\:\/\/)?(www\.)?((youtube\.com\/watch\?v=)|(youtu.be\/))([a-zA-Z0-9\-_])+/)) {
+        console.log(`play url did not match: ${url}`)
+        await sendChatMessage(`This does not look like a youtube URL to me: ${url}. I will not play it.`)
+        return
       }
-      console.log(`stdout: ${stdout}`);
-    })
+
+      if (state.playing === true) {
+        console.log("stopping current track")
+        await sendChatMessage(`I am stopping the currently running track ${state.url}.`)
+        await stopCurrentTrack()
+      }
+      await startYoutubeGst({
+        url,
+        ... state.transportOpts
+      })
+      state.url = url
+      await sendChatMessage(`Playing youtube video ${url}`)
+    }
+
+    // stop command
+    else if (matched = command.match(/^stop/)) {
+      if (state.playing === true) {
+        await sendChatMessage(`I am stopping the currently running track ${state.url}.`)
+        console.log("stopping current track")
+        await stopCurrentTrack()
+      }
+    }
+
+    // unknown
+    else {
+      console.log(`ignoring ${command}`)
+    }
   }
 
   ////////////////////////////////////////
 
-  const client = socketio('https://space.miniclub.space:3443?peerId=shlumpf&roomId=miniclub')
+  const peerId = (Math.random() +1).toString(36).substr(2, 7)
+  const roomId = 'miniclub'
+  const displayName = faker.name.findName()
+
+  const state = {
+    joined: false,
+    playing: false,
+    url: null,
+    transportOpts: null
+  }
+
+
+
+  const client = socketio(`https://space.miniclub.space:3443?peerId=${peerId}peerId&roomId=${roomId}`)
 
   client.on('connect', function () {
     console.log("connected")
@@ -327,10 +474,14 @@ async function main() {
         case 'roomReady':
           {
             console.log("roomReady received")
+            
+            // join room
             const gstOpts = await joinRoom({ joinVideo: true })
+            state.joined = true
+            state.transportOpts = gstOpts
 
             // start streamer pipeline
-            startGst(gstOpts)
+            // startGst(gstOpts)
 
             break;
           }
@@ -338,13 +489,19 @@ async function main() {
         case 'activeSpeaker':
           {
             console.log("got activeSpeaker notification: ", notification.data)
+            break
           }
 
 
         case 'chatMessage':
           {
-            const { peerId, chatMessage } = notification.data;
-            break;
+            const { peerId, chatMessage } = notification.data
+            console.log("got chat message: ", notification.data)
+
+            if (chatMessage.type === 'message') {
+              await handleCommand(chatMessage.text)
+            }
+            break
           }
 
         default:

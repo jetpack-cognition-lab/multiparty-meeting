@@ -10,7 +10,12 @@
   "license": "ISC",
   "dependencies": {
     "child_process": "^1.0.2",
+    "execa": "^4.0.2",
+    "faker": "^4.1.0",
     "node-gstreamer-launch": "^0.1.4",
     "socket.io-client": "^2.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.0.0"
   }
 }
