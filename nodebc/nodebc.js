@@ -8,6 +8,11 @@ async function main() {
 
   process.on('SIGINT', async function () {
     console.log("CONTWOL ZEE WAS PWESSED")
+    try {
+      await sendRequest('closeProducer', { producerId: state.transportOpts.audioProducer.id })
+      await sendRequest('closeProducer', { producerId: state.transportOpts.videoProducer.id })
+    } catch(error) {}
+
     // do some cleanup here?
     process.exit(0)
   })
@@ -62,35 +67,34 @@ async function main() {
     const routerRtpCapabilities = await sendRequest('getRouterRtpCapabilities');
 
     // create a transport for audio
-    const audioTransportInfo = await sendRequest(
-      'createPlainTransport',
-      {
-        producing: true,
-        consuming: false
-      });
+    // const audioTransportInfo = await sendRequest(
+    //   'createPlainTransport',
+    //   {
+    //     producing: true,
+    //     consuming: false
+    //   });
 
+    // const audioTransportId = audioTransportInfo.id
+    // const audioTransportIp = audioTransportInfo.ip
+    // const audioTransportPort = audioTransportInfo.port
+    // const audioTransportRtcpPort = audioTransportInfo.rtcpPort
 
-    const audioTransportId = audioTransportInfo.id
-    const audioTransportIp = audioTransportInfo.ip
-    const audioTransportPort = audioTransportInfo.port
-    const audioTransportRtcpPort = audioTransportInfo.rtcpPort
+    // console.log("audio transportInfo:", audioTransportInfo)
 
-    console.log("audio transportInfo:", audioTransportInfo)
+    // // create a transport for video
+    // const videoTransportInfo = await sendRequest(
+    //   'createPlainTransport',
+    //   {
+    //     producing: true,
+    //     consuming: false
+    //   });
 
-    // create a transport for video
-    const videoTransportInfo = await sendRequest(
-      'createPlainTransport',
-      {
-        producing: true,
-        consuming: false
-      });
+    // const videoTransportId = videoTransportInfo.id
+    // const videoTransportIp = videoTransportInfo.ip
+    // const videoTransportPort = videoTransportInfo.port
+    // const videoTransportRtcpPort = videoTransportInfo.rtcpPort
 
-    const videoTransportId = videoTransportInfo.id
-    const videoTransportIp = videoTransportInfo.ip
-    const videoTransportPort = videoTransportInfo.port
-    const videoTransportRtcpPort = videoTransportInfo.rtcpPort
-
-    console.log("video transportInfo:", videoTransportInfo)
+    // console.log("video transportInfo:", videoTransportInfo)
 
     const joinresp = await sendRequest(
       'join',
@@ -147,6 +151,131 @@ async function main() {
     )
     console.log(joinresp)
 
+    // // produce
+    // const audioProducer = await sendRequest(
+    //   'produce',
+    //   {
+    //     transportId: audioTransportId,
+    //     kind: 'audio',
+    //     appData: {
+    //       source: 'mic'
+    //     },
+    //     rtpParameters: {
+    //       encodings: [
+    //         {
+    //           ssrc: 1111
+    //         }
+    //       ],
+    //       codecs: [
+    //         {
+    //           name: "Opus",
+    //           mimeType: "audio/opus",
+    //           payloadType: 100, // "dynamic type" in rtp
+    //           channels: 2,
+    //           clockRate: 48000,
+    //           rtcpFeedback: [
+    //             {
+    //               type: 'nack'
+    //             }
+    //           ],
+    //           parameters: {
+    //             useinbandfec: 1,
+    //             "sprop-stereo": 1
+    //           },
+    //         }
+    //       ]
+    //     }
+    //   }
+    // )
+    // console.log("audioproducer: ", audioProducer)
+    // // await sendRequest('pauseProducer', { producerId: audioProducer.id })
+
+    // const videoProducer = await sendRequest(
+    //   'produce',
+    //   {
+    //     transportId: videoTransportId,
+    //     kind: 'video',
+    //     appData: {
+    //       source: 'webcam'
+    //     },
+
+    //     rtpParameters: {
+    //       codecs: [
+    //         {
+    //           name: "VP8",
+    //           mimeType: "video/VP8",
+    //           payloadType: 101, // "dynamic type" in rtp
+    //           clockRate: 90000,
+    //           rtcpFeedback: [
+    //             { type: 'nack' },
+    //             { type: 'nack', parameter: 'pli' },
+    //             { type: 'ccm', parameter: 'fir' },
+    //           ]
+    //         }
+    //       ],
+    //       encodings: [
+    //         {
+    //           ssrc: 2222
+    //         }
+    //       ]
+    //     }
+    //   }
+    // )
+    // console.log("videoproducer: ", videoProducer)
+    // // await sendRequest('pauseProducer', {producerId: videoProducer.id })
+
+    return {
+      // videoTransportId,
+      // videoTransportIp,
+      // videoTransportPort,
+      // videoTransportRtcpPort,
+      // videoPt: 101,
+      // videoSSRC: 2222,
+      // videoProducer,
+      // audioTransportId,
+      // audioTransportIp,
+      // audioTransportPort,
+      // audioTransportRtcpPort,
+      // audioPt: 100,
+      // audioSSRC: 1111,
+      // audioProducer
+    }
+  }
+
+  const startProducers = async function() {
+    console.log("startproducers", state.transportOpts)
+
+    // transports
+    // create a transport for audio
+    const audioTransportInfo = await sendRequest(
+      'createPlainTransport',
+      {
+        producing: true,
+        consuming: false
+      });
+
+    const audioTransportId = audioTransportInfo.id
+    const audioTransportIp = audioTransportInfo.ip
+    const audioTransportPort = audioTransportInfo.port
+    const audioTransportRtcpPort = audioTransportInfo.rtcpPort
+
+    console.log("audio transportInfo:", audioTransportInfo)
+
+    // create a transport for video
+    const videoTransportInfo = await sendRequest(
+      'createPlainTransport',
+      {
+        producing: true,
+        consuming: false
+      });
+
+    const videoTransportId = videoTransportInfo.id
+    const videoTransportIp = videoTransportInfo.ip
+    const videoTransportPort = videoTransportInfo.port
+    const videoTransportRtcpPort = videoTransportInfo.rtcpPort
+
+    console.log("video transportInfo:", videoTransportInfo)
+
     // produce
     const audioProducer = await sendRequest(
       'produce',
@@ -184,6 +313,7 @@ async function main() {
       }
     )
     console.log("audioproducer: ", audioProducer)
+    // await sendRequest('pauseProducer', { producerId: audioProducer.id })
 
     const videoProducer = await sendRequest(
       'produce',
@@ -216,16 +346,17 @@ async function main() {
         }
       }
     )
-
     console.log("videoproducer: ", videoProducer)
-
-    return {
+    // await sendRequest('pauseProducer', {producerId: videoProducer.id })
+    state.transportOpts = {
+      videoTransportId,
       videoTransportIp,
       videoTransportPort,
       videoTransportRtcpPort,
       videoPt: 101,
       videoSSRC: 2222,
       videoProducer,
+      audioTransportId,
       audioTransportIp,
       audioTransportPort,
       audioTransportRtcpPort,
@@ -235,7 +366,14 @@ async function main() {
     }
   }
 
-  const startJackGst = function (opts) {
+  const stopProducers = async function() {
+    await sendRequest('closeProducer', {producerId: state.transportOpts.audioProducer.id })
+    await sendRequest('closeProducer', {producerId: state.transportOpts.videoProducer.id })
+    await sendRequest('closeTransport', {transportId: state.transportOpts.audioTransportId })
+    await sendRequest('closeTransport', {transportId: state.transportOpts.videoTransportId })
+  }
+
+  const startJackGst = function () {
     const {
       videoTransportIp,
       videoTransportPort,
@@ -247,7 +385,7 @@ async function main() {
       audioTransportRtcpPort,
       audioPt,
       audioSSRC,
-    } = opts
+    } = state.transportOpts
 
     const command = `gst-launch-1.0 -v -m \
       rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
@@ -269,7 +407,9 @@ async function main() {
     execGstCommand(command)
   }
 
-  const startYoutubeGst = async function (opts) {
+  const startYoutubeGst = async function (url) {
+    await startProducers()
+
     const {
       videoTransportIp,
       videoTransportPort,
@@ -281,35 +421,7 @@ async function main() {
       audioTransportRtcpPort,
       audioPt,
       audioSSRC,
-      url
-    } = opts
-
-
-    // const command = `/usr/bin/gst-launch-1.0 \
-    //   rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
-    //   souphttpsrc is-live=true location="$(youtube-dl -f 18 --get-url ${url})' \
-    //     ! qtdemux name=demux \
-    //   demux.video_0 \
-    //     ! queue \
-    //     ! decodebin \
-    //     ! videoconvert \
-    //     ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
-    //     ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
-    //     ! rtpbin.send_rtp_sink_0 \
-    //   rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
-    //   rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
-    //   \
-    //   demux.audio_0 \
-    //     ! queue ! avdec_aac ! audioconvert \
-    //     ! decodebin \
-    //     ! audioresample \
-    //     ! audioconvert \
-    //     ! opusenc \
-    //     ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
-    //     ! rtpbin.send_rtp_sink_1 \
-    //   rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
-    //   rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
-    // `
+    } = state.transportOpts
 
     ytdlcmd = [
       '-f 18', 
@@ -320,53 +432,53 @@ async function main() {
     console.log('getting yturl')
     const ytres = await execa('/usr/bin/youtube-dl', ytdlcmd)
     console.log('got it', ytres.stdout)
-    const yturl = ytres.stdout
+    const yturl = ytres.stdout.replace(/([;'"`#$&*?<>\\])/g, "\\$1")
 
-    pipeline = [
-      `rtpbin name=rtpbin latency=1000 rtp-profile=avpf`,
-      `souphttpsrc is-live=true location='${yturl}'`,
-        `! qtdemux name=demux`,
-      `demux.video_0`,
-        `! queue`,
-        `! decodebin`,
-        `! videoconvert`,
-        `! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4`,
-        `! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2`,
-        `! rtpbin.send_rtp_sink_0`,
-      `rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort}`,
-      `rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false`,
-
-      `demux.audio_0`,
-        `! queue ! avdec_aac ! audioconvert`,
-        `! decodebin`,
-        `! audioresample`,
-        `! audioconvert`,
-        `! opusenc`,
-        `! rtpopuspay pt=${audioPt} ssrc=${audioSSRC}`,
-        `! rtpbin.send_rtp_sink_1`,
-      `rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort}`,
-      `rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false`,
-    ]
+    command = `/usr/bin/gst-launch-1.0 \
+      rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
+      souphttpsrc is-live=true location=${yturl} \
+       ! qtdemux name=demux \
+      demux.video_0 \
+       ! queue \
+       ! decodebin \
+       ! videoconvert \
+       ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
+       ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
+       ! rtpbin.send_rtp_sink_0 \
+      rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
+      rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
+      demux.audio_0 \
+       ! queue ! avdec_aac ! audioconvert \
+       ! decodebin \
+       ! audioresample \
+       ! audioconvert \
+       ! opusenc \
+       ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
+       ! rtpbin.send_rtp_sink_1 \
+      rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
+      rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
+    `
 
 
     // https://www.youtube.com/watch?v=QNIIOr3g8lQ
 
-    // console.log(pipeline)
-    execGstCommand(pipeline)
+    console.log(command)
+    await execGstCommand(command)
   }
 
-  const execGstCommand = async function(pipeline) {
-    // pipeline = pipeline.map(l => l.replace(/\?/g, '\\?').replace(/\&/g, '\\&'))
+  const execGstCommand = async function(command) {
     try {
-      const result = await execa('/usr/bin/gst-launch-1.0', pipeline, {env: {'GST_DEBUG': '4'}})
-      // result.on('exit', () => {
-      //   console.log("exited", result)
-      //   state.gstProcess = null
-      //   state.playing = false
-      // })
+      const result = execa.command(command, {shell: false, env: {'GST_DEBUG': '2'}})
+      result.on('exit', () => {
+        console.log("exited", result)
+        stopProducers()
+        state.gstProcess = null
+        state.playing = false
+      })
       state.gstProcess = result
       state.playing = true
     } catch (error) {
+      //await stopProducers()      
       console.log(error)
     }
   }
@@ -388,7 +500,12 @@ async function main() {
   }
 
   const stopCurrentTrack = async function() {
-    console.log(state.gstProcess)
+    // console.log(state.gstProcess)
+    console.log("stop track")
+    await stopProducers()      
+
+    // await sendRequest('pauseProducer', { producerId: state.transportOpts.audioProducer.id })
+    // await sendRequest('pauseProducer', { producerId: state.transportOpts.videoProducer.id })
     if (state.gstProcess) {
       state.gstProcess.kill('SIGTERM', {
         forceKillAfterTimeout: 2000
@@ -419,16 +536,14 @@ async function main() {
         await sendChatMessage(`I am stopping the currently running track ${state.url}.`)
         await stopCurrentTrack()
       }
-      await startYoutubeGst({
-        url,
-        ... state.transportOpts
-      })
+      await startYoutubeGst(url)
       state.url = url
       await sendChatMessage(`Playing youtube video ${url}`)
     }
 
     // stop command
     else if (matched = command.match(/^stop/)) {
+      // console.log(state)
       if (state.playing === true) {
         await sendChatMessage(`I am stopping the currently running track ${state.url}.`)
         console.log("stopping current track")
@@ -455,8 +570,6 @@ async function main() {
     transportOpts: null
   }
 
-
-
   const client = socketio(`https://space.miniclub.space:3443?peerId=${peerId}peerId&roomId=${roomId}`)
 
   client.on('connect', function () {
@@ -476,9 +589,8 @@ async function main() {
             console.log("roomReady received")
             
             // join room
-            const gstOpts = await joinRoom({ joinVideo: true })
+            await joinRoom({ joinVideo: true })
             state.joined = true
-            state.transportOpts = gstOpts
 
             // start streamer pipeline
             // startGst(gstOpts)
@@ -488,10 +600,9 @@ async function main() {
 
         case 'activeSpeaker':
           {
-            console.log("got activeSpeaker notification: ", notification.data)
+            //console.log("got activeSpeaker notification: ", notification.data)
             break
           }
-
 
         case 'chatMessage':
           {
@@ -499,6 +610,7 @@ async function main() {
             console.log("got chat message: ", notification.data)
 
             if (chatMessage.type === 'message') {
+              console.log("got chat message: ", chatMessage.text)
               await handleCommand(chatMessage.text)
             }
             break
@@ -512,6 +624,7 @@ async function main() {
     }
     catch (error) {
       console.error('error on socket "notification" event failed: "', error);
+      await sendChatMessage(`Shit: Error`)
     }
   })
 
