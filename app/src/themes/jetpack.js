@@ -17,9 +17,7 @@ const jetpack = createMuiTheme({
       }
     },
     MuiBadge: {
-      colorPrimary: {
-        backgroundColor: '#00a0e0'
-      }
+      backgroundColor: '#00a0e0',
     },
     MuiButton: {
       root: {
@@ -42,12 +40,13 @@ const jetpack = createMuiTheme({
       }
     }
   },
-  pallete: {
+  palette: {
+    type: 'dark',
     primary: {
-      main: '#ac0000',
+      main: '#0064ac',
     },
     secondary: {
-      main: '#206600',
+      main: '#204666',
     },
     contrastThreshold: 3,
     tonalOffset: 0.2,
