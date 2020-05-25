@@ -171,8 +171,9 @@ const ChooseRoom = ({
 	classes
 }) =>
 {
-	const [ roomId, setRoomId ] =
-		useState(randomString({ length: 8 }).toLowerCase());
+	// const [ roomId, setRoomId ] =
+	// 	useState(randomString({ length: 8 }).toLowerCase());
+	const [ roomId, setRoomId ] = useState('miniclub');
 
 	const intl = useIntl();
 
@@ -244,7 +245,8 @@ const ChooseRoom = ({
 					<CookieConsent buttonText={intl.formatMessage({
 						id             : 'room.consentUnderstand',
 						defaultMessage : 'I understand'
-					})}>
+					})}
+					>
 						<FormattedMessage
 							id='room.cookieConsent'
 							defaultMessage='This website uses cookies to enhance the user experience'

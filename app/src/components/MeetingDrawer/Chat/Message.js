@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import { withStyles } from '@material-ui/core/styles';
-import DOMPurify from 'dompurify'; 
+// import DOMPurify from 'dompurify'; 
 import marked from 'marked';
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
@@ -76,17 +76,19 @@ const Message = (props) =>
 				<Typography
 					className={classes.text}
 					variant='subtitle1'
-					// eslint-disable-next-line react/no-danger
-					dangerouslySetInnerHTML={{ __html : DOMPurify.sanitize(
-						marked.parse(
-							text,
-							{ renderer: linkRenderer }
-						),
-						{
-							ALLOWED_TAGS : [ 'a' ],
-							ALLOWED_ATTR : [ 'href', 'target', 'title' ]
-						}
-					) }}
+					// xeslint-disable-next-line react/no-danger
+					// dangerouslySetInnerHTML={{ __html : DOMPurify.sanitize(
+					// 	marked.parse(
+					// 		text,
+					// 		{ renderer: linkRenderer }
+					// 	),
+					// 	{
+					// 		ALLOWED_TAGS : [ 'a' ],
+					// 		ALLOWED_ATTR : [ 'href', 'target', 'title' ]
+					// 	}
+					// ) }}
+					dangerouslySetInnerHTML={{ __html: marked(text) }}
+
 				/>
 				<Typography variant='caption'>{self ? 'Me' : name} - {time}</Typography>
 			</div>

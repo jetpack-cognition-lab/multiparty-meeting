@@ -64,37 +64,7 @@ async function main() {
 
   const joinRoom = async function () {
     // get the rtp caps 
-    const routerRtpCapabilities = await sendRequest('getRouterRtpCapabilities');
-
-    // create a transport for audio
-    // const audioTransportInfo = await sendRequest(
-    //   'createPlainTransport',
-    //   {
-    //     producing: true,
-    //     consuming: false
-    //   });
-
-    // const audioTransportId = audioTransportInfo.id
-    // const audioTransportIp = audioTransportInfo.ip
-    // const audioTransportPort = audioTransportInfo.port
-    // const audioTransportRtcpPort = audioTransportInfo.rtcpPort
-
-    // console.log("audio transportInfo:", audioTransportInfo)
-
-    // // create a transport for video
-    // const videoTransportInfo = await sendRequest(
-    //   'createPlainTransport',
-    //   {
-    //     producing: true,
-    //     consuming: false
-    //   });
-
-    // const videoTransportId = videoTransportInfo.id
-    // const videoTransportIp = videoTransportInfo.ip
-    // const videoTransportPort = videoTransportInfo.port
-    // const videoTransportRtcpPort = videoTransportInfo.rtcpPort
-
-    // console.log("video transportInfo:", videoTransportInfo)
+    state.routerRtpCapabilities = await sendRequest('getRouterRtpCapabilities');
 
     const joinresp = await sendRequest(
       'join',
@@ -150,96 +120,6 @@ async function main() {
       }
     )
     console.log(joinresp)
-
-    // // produce
-    // const audioProducer = await sendRequest(
-    //   'produce',
-    //   {
-    //     transportId: audioTransportId,
-    //     kind: 'audio',
-    //     appData: {
-    //       source: 'mic'
-    //     },
-    //     rtpParameters: {
-    //       encodings: [
-    //         {
-    //           ssrc: 1111
-    //         }
-    //       ],
-    //       codecs: [
-    //         {
-    //           name: "Opus",
-    //           mimeType: "audio/opus",
-    //           payloadType: 100, // "dynamic type" in rtp
-    //           channels: 2,
-    //           clockRate: 48000,
-    //           rtcpFeedback: [
-    //             {
-    //               type: 'nack'
-    //             }
-    //           ],
-    //           parameters: {
-    //             useinbandfec: 1,
-    //             "sprop-stereo": 1
-    //           },
-    //         }
-    //       ]
-    //     }
-    //   }
-    // )
-    // console.log("audioproducer: ", audioProducer)
-    // // await sendRequest('pauseProducer', { producerId: audioProducer.id })
-
-    // const videoProducer = await sendRequest(
-    //   'produce',
-    //   {
-    //     transportId: videoTransportId,
-    //     kind: 'video',
-    //     appData: {
-    //       source: 'webcam'
-    //     },
-
-    //     rtpParameters: {
-    //       codecs: [
-    //         {
-    //           name: "VP8",
-    //           mimeType: "video/VP8",
-    //           payloadType: 101, // "dynamic type" in rtp
-    //           clockRate: 90000,
-    //           rtcpFeedback: [
-    //             { type: 'nack' },
-    //             { type: 'nack', parameter: 'pli' },
-    //             { type: 'ccm', parameter: 'fir' },
-    //           ]
-    //         }
-    //       ],
-    //       encodings: [
-    //         {
-    //           ssrc: 2222
-    //         }
-    //       ]
-    //     }
-    //   }
-    // )
-    // console.log("videoproducer: ", videoProducer)
-    // // await sendRequest('pauseProducer', {producerId: videoProducer.id })
-
-    return {
-      // videoTransportId,
-      // videoTransportIp,
-      // videoTransportPort,
-      // videoTransportRtcpPort,
-      // videoPt: 101,
-      // videoSSRC: 2222,
-      // videoProducer,
-      // audioTransportId,
-      // audioTransportIp,
-      // audioTransportPort,
-      // audioTransportRtcpPort,
-      // audioPt: 100,
-      // audioSSRC: 1111,
-      // audioProducer
-    }
   }
 
   const startProducers = async function() {
@@ -373,7 +253,8 @@ async function main() {
     await sendRequest('closeTransport', {transportId: state.transportOpts.videoTransportId })
   }
 
-  const startJackGst = function () {
+  const startJackGst = async function () {
+    await startProducers()
     const {
       videoTransportIp,
       videoTransportPort,
@@ -409,7 +290,6 @@ async function main() {
 
   const startYoutubeGst = async function (url) {
     await startProducers()
-
     const {
       videoTransportIp,
       videoTransportPort,
@@ -533,9 +413,10 @@ async function main() {
 
       if (state.playing === true) {
         console.log("stopping current track")
-        await sendChatMessage(`I am stopping the currently running track ${state.url}.`)
+        await sendChatMessage(`Stopping the currently running track ${state.url}.`)
         await stopCurrentTrack()
       }
+      await sendChatMessage(`Attempt on youtube video ${url}`)
       await startYoutubeGst(url)
       state.url = url
       await sendChatMessage(`Playing youtube video ${url}`)
@@ -561,7 +442,7 @@ async function main() {
 
   const peerId = (Math.random() +1).toString(36).substr(2, 7)
   const roomId = 'miniclub'
-  const displayName = faker.name.findName()
+  const displayName = "Playerbot" // faker.name.findName()
 
   const state = {
     joined: false,

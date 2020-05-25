@@ -24,6 +24,7 @@ class MessageList extends React.Component
 	componentDidMount()
 	{
 		this.node.scrollTop = this.node.scrollHeight;
+	  // this.scrollToBottom();
 	}
 
 	getSnapshotBeforeUpdate()
@@ -42,16 +43,22 @@ class MessageList extends React.Component
 
 	componentDidUpdate(prevProps, prevState, shouldScroll)
 	{
-		if (shouldScroll)
-		{
-			this.node.scrollTop = this.node.scrollHeight;
-		}
+		// if (shouldScroll)
+		// {
+		this.node.scrollTop = this.node.scrollHeight;
+		// }
+		// this.scrollToBottom();
 	}
 
 	getTimeString(time)
 	{
 		return (<FormattedTime value={new Date(time)} />);
 	}
+
+	// scrollToBottom() 
+	// {
+	//  	this.messagesEnd.scrollIntoView({ behavior: 'smooth' });
+	// }
 
 	render()
 	{
