@@ -27,12 +27,7 @@ const styles = (theme) =>
 			display              : 'flex',
 			width                : '100%',
 			height               : '100%',
-			backgroundColor      : 'var(--background-color)',
-			backgroundImage      : `url(${window.config ? window.config.background : null})`,
-			backgroundAttachment : 'fixed',
-			backgroundPosition   : 'center',
-			backgroundSize       : 'cover',
-			backgroundRepeat     : 'no-repeat'
+			backgroundColor      : '#000',
 		},
 		dialogTitle :
 		{
@@ -68,7 +63,7 @@ const styles = (theme) =>
 			position : 'absolute',
 			right    : theme.spacing(2),
 			top      : theme.spacing(2),
-			padding  : 0
+			padding  : 50,
 		},
 		largeIcon :
 		{

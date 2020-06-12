@@ -15,7 +15,7 @@ const styles = (theme) =>
 			flexDirection : 'column',
 			alignItems    : 'center',
 			overflowY     : 'auto',
-			padding       : theme.spacing(1)
+			padding       : theme.spacing(1),	
 		}
 	});
 

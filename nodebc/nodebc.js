@@ -304,7 +304,8 @@ async function main() {
     } = state.transportOpts
 
     ytdlcmd = [
-      '-f 18', 
+      '-f 18',
+      '-4',
       '--get-url',
       url 
     ]

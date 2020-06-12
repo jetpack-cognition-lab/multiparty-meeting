@@ -38,7 +38,10 @@ const styles = (theme) =>
 		{
 			'& p' :
 			{
-				margin : 0
+				margin : 0,
+				'& a' : {
+					color: 'lightblue'
+				}
 			}
 		},
 		content :

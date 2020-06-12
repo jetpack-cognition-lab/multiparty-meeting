@@ -42,6 +42,8 @@ const styles = (theme) =>
 			marginLeft                   : 20,
 			[theme.breakpoints.up('sm')] :
 			{
+        position: 'absolute',
+        left: '200px',
 				display : 'block'
 			}
 		},
