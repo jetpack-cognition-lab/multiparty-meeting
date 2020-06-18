@@ -304,7 +304,8 @@ async function main() {
     } = state.transportOpts
 
     ytdlcmd = [
-      '-f 18',
+	    '-f mp3',
+	// '-f 18',
       '-4',
       '--get-url',
       url 
@@ -315,7 +316,7 @@ async function main() {
     console.log('got it', ytres.stdout)
     const yturl = ytres.stdout.replace(/([;'"`#$&*?<>\\])/g, "\\$1")
 
-    command = `/usr/bin/gst-launch-1.0 \
+/*    command = `/usr/bin/gst-launch-1.0 \
       rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
       souphttpsrc is-live=true location=${yturl} \
        ! qtdemux name=demux \
@@ -330,6 +331,21 @@ async function main() {
       rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
       demux.audio_0 \
        ! queue ! avdec_aac ! audioconvert \
+       ! decodebin \
+       ! audioresample \
+       ! audioconvert \
+       ! opusenc \
+       ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
+       ! rtpbin.send_rtp_sink_1 \
+      rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
+      rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
+    `
+*/
+command = `/usr/bin/gst-launch-1.0 \
+      rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
+      souphttpsrc is-live=true location=${yturl} \
+      demux.audio_0 \
+       ! queue ! avdec_mp3 ! audioconvert \
        ! decodebin \
        ! audioresample \
        ! audioconvert \
@@ -406,11 +422,11 @@ async function main() {
     if (matched = command.match(/^play (.*)/)) {
       console.log("play command received")
       const url = matched[1]
-      if (!url.match(/^(http(s)??\:\/\/)?(www\.)?((youtube\.com\/watch\?v=)|(youtu.be\/))([a-zA-Z0-9\-_])+/)) {
-        console.log(`play url did not match: ${url}`)
-        await sendChatMessage(`This does not look like a youtube URL to me: ${url}. I will not play it.`)
-        return
-      }
+      // if (!url.match(/^(http(s)??\:\/\/)?(www\.)?((youtube\.com\/watch\?v=)|(youtu.be\/))([a-zA-Z0-9\-_])+/)) {
+      //  console.log(`play url did not match: ${url}`)
+      //  await sendChatMessage(`This does not look like a youtube URL to me: ${url}. I will not play it.`)
+      //  return
+      // }
 
       if (state.playing === true) {
         console.log("stopping current track")
