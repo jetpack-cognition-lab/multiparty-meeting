@@ -28,6 +28,16 @@ import LockIcon from '@material-ui/icons/Lock';
 import LockOpenIcon from '@material-ui/icons/LockOpen';
 import Button from '@material-ui/core/Button';
 import Tooltip from '@material-ui/core/Tooltip';
+import { injectStyle } from '../../utils'
+
+const keyframeStyles = `
+    @keyframes infiniteRotate {
+      0% { -webkit-transform: rotate(0deg); }
+      100% { -webkit-transform: rotate(360deg); }
+    }
+`
+
+injectStyle(keyframeStyles)
 
 const styles = (theme) =>
 	({
@@ -44,7 +54,8 @@ const styles = (theme) =>
 			{
         position: 'absolute',
         left: '200px',
-				display : 'block'
+				display : 'block',
+       animation: 'infiniteRotate 10s linear infinite',
 			}
 		},
 		divider :
@@ -195,7 +206,8 @@ const TopBar = (props) =>
 						<MenuIcon />
 					</IconButton>
 				</PulsingBadge>
-				{ window.config && window.config.logo && <img alt='Logo' className={classes.logo} src={window.config.logo} /> }
+				{ (window.config && window.config.logo)
+          && <img alt='Logo' className={classes.logo} src={window.config.logo} /> }
 				<Typography
 					className={classes.title}
 					variant='h6'
