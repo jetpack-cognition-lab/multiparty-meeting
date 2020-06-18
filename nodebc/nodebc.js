@@ -303,58 +303,97 @@ async function main() {
       audioSSRC,
     } = state.transportOpts
 
-    ytdlcmd = [
-	    '-f mp3',
-	// '-f 18',
+    const formatcmd = [
+      '--list-formats',
+      url 
+    ]
+
+
+    console.log('getting formats')
+    const formatres = await execa('/usr/bin/youtube-dl', formatcmd)
+    console.log('got it', formatres.stdout)
+    lines = formatres.stdout.split(/\n/)
+    let format = null
+    let isVideo = false
+    lines.forEach((line) => {
+      if (line.match(/^format/)) { return }
+      parts = line.split(/\s+/)
+      const f = parts[0]
+      switch (f) {
+        case 'http_mp3_128':
+        case 'mp3':
+        case 'mp3-128':
+          format = f
+          isVideo = false
+          break
+        default:
+          break
+      }
+    })
+    // attempt a youtube donwload if nothing matched
+
+    if (!format) {
+      format = "18"
+      isVideo = true
+    }
+
+    const ytdlcmd = [
+      `-f ${format}`,
       '-4',
       '--get-url',
       url 
     ]
+
+    
+    console.log("chosen format", format)
 
     console.log('getting yturl')
     const ytres = await execa('/usr/bin/youtube-dl', ytdlcmd)
     console.log('got it', ytres.stdout)
     const yturl = ytres.stdout.replace(/([;'"`#$&*?<>\\])/g, "\\$1")
 
-/*    command = `/usr/bin/gst-launch-1.0 \
-      rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
-      souphttpsrc is-live=true location=${yturl} \
-       ! qtdemux name=demux \
-      demux.video_0 \
-       ! queue \
-       ! decodebin \
-       ! videoconvert \
-       ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
-       ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
-       ! rtpbin.send_rtp_sink_0 \
-      rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
-      rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
-      demux.audio_0 \
-       ! queue ! avdec_aac ! audioconvert \
-       ! decodebin \
-       ! audioresample \
-       ! audioconvert \
-       ! opusenc \
-       ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
-       ! rtpbin.send_rtp_sink_1 \
-      rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
-      rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
-    `
-*/
-command = `/usr/bin/gst-launch-1.0 \
-      rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
-      souphttpsrc is-live=true location=${yturl} \
-      demux.audio_0 \
-       ! queue ! avdec_mp3 ! audioconvert \
-       ! decodebin \
-       ! audioresample \
-       ! audioconvert \
-       ! opusenc \
-       ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
-       ! rtpbin.send_rtp_sink_1 \
-      rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
-      rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
-    `
+    let command
+
+    if (isVideo) {
+      // ! avdec_aac ! audioconvert \
+      command = `/usr/bin/gst-launch-1.0 \
+        rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
+        souphttpsrc is-live=true location=${yturl} \
+         ! qtdemux name=demux \
+        demux.video_0 \
+         ! queue \
+         ! decodebin \
+         ! videoconvert \
+         ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
+         ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
+         ! rtpbin.send_rtp_sink_0 \
+        rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
+        rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
+        demux.audio_0 \
+         ! queue \
+         ! decodebin \
+         ! audioresample \
+         ! audioconvert \
+         ! opusenc \
+         ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
+         ! rtpbin.send_rtp_sink_1 \
+        rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
+        rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
+      `
+    } else {
+      command = `/usr/bin/gst-launch-1.0 \
+        rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
+        souphttpsrc is-live=true location=${yturl} \
+         ! queue ! decodebin ! audioconvert \
+         ! audioresample \
+         ! audioconvert \
+         ! opusenc \
+         ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
+         ! rtpbin.send_rtp_sink_1 \
+        rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
+        rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
+      `
+    }
 
 
     // https://www.youtube.com/watch?v=QNIIOr3g8lQ
