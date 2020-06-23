@@ -304,7 +304,7 @@ async function main() {
     } = state.transportOpts
 
     ytdlcmd = [
-	    '-f mp3',
+	    // '-f mp3',
 	// '-f 18',
       '-4',
       '--get-url',
@@ -312,7 +312,7 @@ async function main() {
     ]
 
     console.log('getting yturl')
-    const ytres = await execa('/usr/bin/youtube-dl', ytdlcmd)
+    const ytres = await execa('/usr/local/bin/youtube-dl', ytdlcmd)
     console.log('got it', ytres.stdout)
     const yturl = ytres.stdout.replace(/([;'"`#$&*?<>\\])/g, "\\$1")
 
