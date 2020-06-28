@@ -40,6 +40,11 @@ const peer = (state = {}, action) =>
 			return { ...state, picture: action.payload.picture };
 		}
 
+		case 'SET_PEER_AUDIO_VOLUME':
+		{
+			return { ...state, volume: action.payload.audioVolume };
+		}
+
 		default:
 			return state;
 	}
@@ -70,6 +75,7 @@ const peers = (state = {}, action) =>
 		case 'SET_PEER_SCREEN_IN_PROGRESS':
 		case 'SET_PEER_RAISE_HAND_STATE':
 		case 'SET_PEER_PICTURE':
+    case 'SET_PEER_AUDIO_VOLUME':
 		case 'ADD_CONSUMER':
 		{
 			const oldPeer = state[action.payload.peerId];

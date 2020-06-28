@@ -45,3 +45,9 @@ export const setPeerPicture = (peerId, picture) =>
 		type    : 'SET_PEER_PICTURE',
 		payload : { peerId, picture }
 	});
+
+export const setPeerVolume = (peerId, audioVolume) =>
+	({
+		type    : 'SET_PEER_AUDIO_VOLUME',
+		payload : { peerId, audioVolume }
+	});
