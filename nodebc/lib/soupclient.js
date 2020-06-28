@@ -67,10 +67,11 @@ class SoupClient extends EventEmitter {
         case 'roomReady':
         {
           console.log("roomReady received")
+          this.emit(notification.method, notification.data)
           // join room
           await this.joinRoom()
           this.joined = true
-          this.emit(notification.method, notification.data)
+          this.emit('ready')
           break;
         }
         default:

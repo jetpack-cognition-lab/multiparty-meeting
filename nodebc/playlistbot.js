@@ -1,3 +1,4 @@
+const config = require('./config');
 const socketio = require('socket.io-client')
 const faker = require('faker')
 const execa = require('execa')
@@ -164,7 +165,7 @@ async function main() {
 
   const roomId = 'miniclub'
   const displayName = "PlaylistBot"
-  const url = 'https://soup.jetpack.cl:5443'
+  const url = config.mainurl || 'https://soup.jetpack.cl:5443'
 
   const soupClient = new SoupClient(url, roomId, displayName)
 

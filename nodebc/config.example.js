@@ -7,6 +7,9 @@ module.exports =
 	mainurl: 'https://soup.jetpack.cl:5443',
 	youtubedlbin: '/usr/local/bin/youtube-dl',
 
+	// optional jack source options for source.js
+	jackSourceOptions: 'connect=1 port-pattern="system:capture_(1|2)"'
+
 	// Auth conf
 	/*
 	auth :
