@@ -8,6 +8,7 @@ import { withRoomContext } from '../../RoomContext';
 import { withStyles } from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import * as roomActions from '../../actions/roomActions';
+import { setPeerAudioVolume } from '../../actions/peerActions';
 import { useIntl, FormattedMessage } from 'react-intl';
 import VideoView from '../VideoContainers/VideoView';
 import Tooltip from '@material-ui/core/Tooltip';
@@ -154,6 +155,11 @@ const Peer = (props) =>
 
 	const smallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const setAudioVolume = (ev) =>
+    props.setAudioVolume(peer.id, parseFloat(ev.target.value));
+
+  const audioVolume = peer.audioVolume !== undefined ? peer.audioVolume : 1.0;
+
 	const rootStyle =
 	{
 		'margin' : spacing,
@@ -226,6 +232,14 @@ const Peer = (props) =>
 							}, 2000);
 						}}
 					>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.1}
+              value={audioVolume}
+              onChange={setAudioVolume}
+            />
 						<Tooltip
 							title={intl.formatMessage({
 								id             : 'device.muteAudio',
@@ -512,6 +526,7 @@ Peer.propTypes =
 	smallButtons             : PropTypes.bool,
 	toggleConsumerFullscreen : PropTypes.func.isRequired,
 	toggleConsumerWindow     : PropTypes.func.isRequired,
+  setAudioVolume           : PropTypes.func.isRequired,
 	classes                  : PropTypes.object.isRequired,
 	theme                    : PropTypes.object.isRequired
 };
@@ -545,7 +560,11 @@ const mapDispatchToProps = (dispatch) =>
 		{
 			if (consumer)
 				dispatch(roomActions.toggleConsumerWindow(consumer.id));
-		}
+		},
+    setAudioVolume: (peerId, volume) =>
+    {
+        dispatch(setPeerAudioVolume(peerId, volume));
+    }
 	};
 };
 

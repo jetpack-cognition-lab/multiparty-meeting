@@ -42,7 +42,7 @@ const peer = (state = {}, action) =>
 
 		case 'SET_PEER_AUDIO_VOLUME':
 		{
-			return { ...state, volume: action.payload.audioVolume };
+			return { ...state, audioVolume: action.payload.audioVolume };
 		}
 
 		default:

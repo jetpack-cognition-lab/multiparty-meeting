@@ -429,7 +429,6 @@ export default class RoomClient
 		{
 			this.changeDisplayName(displayName);
 			this.changePicture(picture);
-      this.changeAudioVolume(1.0);
 		}
 		else
 		{
@@ -593,20 +592,6 @@ export default class RoomClient
 		catch (error)
 		{
 			logger.error('changePicture() | failed: %o', error);
-		}
-	}
-
-	async changeAudioVolume(volume)
-	{
-		logger.debug('changeAudioVolume() [volume: "%s"]', volume);
-
-		try
-		{
-			await this.sendRequest('changeAudioVolume', { volume });
-		}
-		catch (error)
-		{
-			logger.error('changeAudioVolume() | failed: %o', error);
 		}
 	}
 
