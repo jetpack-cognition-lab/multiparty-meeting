@@ -129,6 +129,7 @@ async function main() {
 
     // transports
     // create a transport for audio
+    console.log("createPlainTransport")
     const audioTransportInfo = await sendRequest(
       'createPlainTransport',
       {
@@ -144,6 +145,7 @@ async function main() {
     console.log("audio transportInfo:", audioTransportInfo)
 
     // create a transport for video
+    console.log("createPlainTransport")
     const videoTransportInfo = await sendRequest(
       'createPlainTransport',
       {
