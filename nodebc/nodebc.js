@@ -1,3 +1,5 @@
+// added config. cp config.example.js to config.js and localize your settings
+const config = require('./config');
 const socketio = require('socket.io-client')
 const faker = require('faker')
 const execa = require('execa')
@@ -310,7 +312,7 @@ async function main() {
 
 
     console.log('getting formats')
-    const formatres = await execa('/usr/bin/youtube-dl', formatcmd)
+    const formatres = await execa(config.youtubedlbin, formatcmd)
     console.log('got it', formatres.stdout)
     lines = formatres.stdout.split(/\n/)
     let format = null
@@ -348,7 +350,7 @@ async function main() {
     console.log("chosen format", format)
 
     console.log('getting yturl')
-    const ytres = await execa('/usr/local/bin/youtube-dl', ytdlcmd)
+    const ytres = await execa(config.youtubedlbin, ytdlcmd)
     console.log('got it', ytres.stdout)
     const yturl = ytres.stdout.replace(/([;'"`#$&*?<>\\])/g, "\\$1")
 
@@ -498,7 +500,7 @@ async function main() {
 
   const peerId = (Math.random() +1).toString(36).substr(2, 7)
   const roomId = 'miniclub'
-  const displayName = "Playerbot" // faker.name.findName()
+  const displayName = "Playerbot1" // faker.name.findName()
 
   const state = {
     joined: false,
@@ -507,7 +509,10 @@ async function main() {
     transportOpts: null
   }
 
-  const client = socketio(`https://space.miniclub.space:3443?peerId=${peerId}peerId&roomId=${roomId}`)
+    // const client = socketio(`https://space.miniclub.space:3443?peerId=${peerId}peerId&roomId=${roomId}`)
+    // const client = socketio(`https://soup.jetpack.cl:5443?peerId=${peerId}peerId&roomId=${roomId}`)
+    console.log(`mainurl ${config.mainurl}`)
+    const client = socketio(`${config.mainurl}?peerId=${peerId}peerId&roomId=${roomId}`)
 
   client.on('connect', function () {
     console.log("connected")
