@@ -13,7 +13,9 @@
     "execa": "^4.0.2",
     "faker": "^4.1.0",
     "node-gstreamer-launch": "^0.1.4",
-    "socket.io-client": "^2.3.0"
+    "sequelize": "^6.2.3",
+    "socket.io-client": "^2.3.0",
+    "sqlite3": "^4.2.0"
   },
   "devDependencies": {
     "eslint": "^7.0.0"

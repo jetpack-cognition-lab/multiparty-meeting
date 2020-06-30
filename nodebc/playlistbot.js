@@ -3,8 +3,7 @@ const socketio = require('socket.io-client')
 const faker = require('faker')
 const execa = require('execa')
 const { SoupClient } = require('./lib/soupclient')
-
-// console.log(SoupClient)
+const { sequelize, User, Track, Playlist, PlaylistItem, Play, Vote} = require('./lib/plb-models')
 
 async function main() {
 
@@ -163,6 +162,21 @@ async function main() {
 
   ////////////////////////////////////////
 
+  await User.sync({force: true})
+  await Track.sync({force: true})
+  await Playlist.sync({force: true})
+  await PlaylistItem.sync({force: true})
+  await Play.sync({force: true})
+  await Vote.sync({force: true})
+  // seed a playlist
+  const [playlist, created] = await Playlist.findOrCreate({
+    where: { name: 'default' }
+  })
+  console.log("ensured playlist", playlist.name)
+
+  console.log("All models were synchronized successfully.");
+
+  //////////////////////////////////////////
   const roomId = 'miniclub'
   const displayName = "PlaylistBot"
   const url = config.mainurl || 'https://soup.jetpack.cl:5443'
