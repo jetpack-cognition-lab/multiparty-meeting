@@ -111,7 +111,7 @@ class SoupClient extends EventEmitter {
           type: "message",
           text: message,
           time: new Date().valueOf(),
-          name: displayName,
+          name: this.name,
           sender: 'response',
           picture: null
         }

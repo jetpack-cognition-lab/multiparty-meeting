@@ -12,6 +12,7 @@
     "child_process": "^1.0.2",
     "execa": "^4.0.2",
     "faker": "^4.1.0",
+    "mkdirp": "^1.0.4",
     "node-gstreamer-launch": "^0.1.4",
     "sequelize": "^6.2.3",
     "socket.io-client": "^2.3.0",

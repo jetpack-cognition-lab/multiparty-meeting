@@ -6,9 +6,16 @@ module.exports =
 	// youtubedlbin: '/usr/bin/youtube-dl',
 	mainurl: 'https://soup.jetpack.cl:5443',
 	youtubedlbin: '/usr/local/bin/youtube-dl',
+	ffmpegbin: '/usr/bin/ffmpeg',
 
 	// optional jack source options for source.js
 	jackSourceOptions: 'connect=1 port-pattern="system:capture_(1|2)"'
+
+	// playlistBot
+	// create database tables, this DELETES ALL DATA
+	initDatabase: false
+	// base directory of downloaded stuff
+	trackDataRoot: './trackdata'
 
 	// Auth conf
 	/*

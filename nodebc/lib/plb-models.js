@@ -22,15 +22,10 @@ Track.init({
   filepath: DataTypes.STRING,
   url: DataTypes.STRING,
   type: DataTypes.STRING,
-  submitUserId: {
-    type: DataTypes.UUID, 
-    references: {
-      model: User,
-      key: 'id',
-    }
-  }
+  state: {type: DataTypes.STRING, allowNull: false, default: 'ADDED'}
 }, { sequelize, indexes: [
-  { fields: ['type'] }
+  { fields: ['type'] },
+  { fields: ['state'] }
 ]});
 
 class Playlist extends Model {}
@@ -41,32 +36,10 @@ Playlist.init({
   { fields: ['name'] }
 ]});
 
-
 class PlaylistItem extends Model {}
 PlaylistItem.init({
   id: {type: DataTypes.UUID, defaultValue: Sequelize.UUIDV4, primaryKey: true},
-  sort:{type: DataTypes.FLOAT, allowNull: false},
-  playlistId: {
-    type: DataTypes.UUID, 
-    references: {
-      model: Playlist,
-      key: 'id',
-    }
-  },
-  createdById: {
-    type: DataTypes.UUID, 
-    references: {
-      model: User,
-      key: 'id',
-    }
-  },
-  trackId: {
-    type: DataTypes.UUID, 
-    references: {
-      model: Track,
-      key: 'id',
-    }
-  }
+  sort:{type: DataTypes.FLOAT, allowNull: false}
 }, { sequelize, indexes: [
   { fields: ['sort'] }
 ]});
@@ -74,14 +47,7 @@ PlaylistItem.init({
 class Play extends Model {}
 Play.init({
   id: {type: DataTypes.UUID, defaultValue: Sequelize.UUIDV4, primaryKey: true},
-  playedToEnd: {type: DataTypes.BOOLEAN, defaultValue: false},
-  trackId: {
-    type: DataTypes.UUID, 
-    references: {
-      model: Track,
-      key: 'id',
-    }
-  }
+  playedToEnd: {type: DataTypes.BOOLEAN, defaultValue: false}
 }, { sequelize, indexes: [
   { fields: ['playedToEnd'] }
 ]})
@@ -89,22 +55,21 @@ Play.init({
 class Vote extends Model {}
 Vote.init({
   id: {type: DataTypes.UUID, defaultValue: Sequelize.UUIDV4, primaryKey: true},
-  value: DataTypes.INTEGER,
-  voterId: {
-    type: DataTypes.UUID, 
-    references: {
-      model: User,
-      key: 'id',
-    }
-  },
-  playlistItemId: {
-    type: DataTypes.UUID, 
-    references: {
-      model: PlaylistItem,
-      key: 'id',
-    }
-  }
+  value: DataTypes.INTEGER
 }, { sequelize })
+
+
+User.hasMany(Track)
+Track.belongsTo(User, {foreignKey: {name: 'submitUser', type: DataTypes.UUID}})
+Track.hasMany(PlaylistItem)
+Track.hasMany(Vote)
+Track.hasMany(Play)
+Vote.belongsTo(Track, {foreignKey: {type: DataTypes.UUID}})
+Play.belongsTo(Track, {foreignKey: {type: DataTypes.UUID}})
+PlaylistItem.belongsTo(Track, {foreignKey: {type: DataTypes.UUID}})
+Playlist.hasMany(PlaylistItem)
+
+
 
 module.exports = {
   sequelize,
@@ -115,3 +80,4 @@ module.exports = {
   Play,
   Vote
 }
+
