@@ -122,26 +122,36 @@ class SoupClient extends EventEmitter {
   async execGstCommand(command) {
     try {
       const result = execa.command(command, {shell: false, env: {'GST_DEBUG': '2'}})
+
       result.on('exit', () => {
         console.log("exited", result)
         this.stopProducers()
         this.gstProcess = null
         this.playing = false
+        this.emit('play_done')
       })
       this.gstProcess = result
       this.playing = true
+
+      await result
+      console.log('res:', result.stdout)
+      console.log('err:', result.stderr)
+
     } catch (error) {
       this.playing = false
+      this.emit('play_done')
       //await stopProducers()      
       console.log("catched error in execGstCommand: ", error)
     }
   }
 
   async stopProducers() {
-    await this.sendRequest('closeProducer', {producerId: this.transportOpts.audioProducer.id })
-    await this.sendRequest('closeProducer', {producerId: this.transportOpts.videoProducer.id })
-    await this.sendRequest('closeTransport', {transportId: this.transportOpts.audioTransportId })
-    await this.sendRequest('closeTransport', {transportId: this.transportOpts.videoTransportId })
+    if (this.transportOps) {
+      await this.sendRequest('closeProducer', {producerId: this.transportOpts.audioProducer.id })
+      await this.sendRequest('closeProducer', {producerId: this.transportOpts.videoProducer.id })
+      await this.sendRequest('closeTransport', {transportId: this.transportOpts.audioTransportId })
+      await this.sendRequest('closeTransport', {transportId: this.transportOpts.videoTransportId })
+    }
   }
 
   async startProducers() {

@@ -4,6 +4,7 @@ const faker = require('faker')
 const execa = require('execa')
 const mkdirp = require('mkdirp')
 const { SoupClient } = require('./lib/soupclient')
+const { PlaylistPlayer } = require('./lib/playlistplayer')
 const { sequelize, User, Track, Playlist, PlaylistItem, Vote} = require('./lib/plb-models')
 
 const urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/
@@ -352,6 +353,12 @@ async function main() {
   const url = config.mainurl || 'https://soup.jetpack.cl:5443'
 
   const soupClient = new SoupClient(url, roomId, displayName)
+  const playlistPlayer = new PlaylistPlayer(playlist, config.trackDataRoot, soupClient)
+
+  soupClient.on('ready', async () => {
+    console.log("ready! starting playlist player")
+    playlistPlayer.play()
+  })
 
   soupClient.on('chatMessage', async function (data) {
     try {
