@@ -39,18 +39,16 @@ Playlist.init({
 class PlaylistItem extends Model {}
 PlaylistItem.init({
   id: {type: DataTypes.UUID, defaultValue: Sequelize.UUIDV4, primaryKey: true},
-  sort:{type: DataTypes.FLOAT, allowNull: false}
+  sort: {type: DataTypes.FLOAT, allowNull: false},
+  played: {type: DataTypes.BOOLEAN, defaultValue: false},
+  playedToEnd: {type: DataTypes.BOOLEAN, defaultValue: false},
+  playedAt: {type: DataTypes.DATE}
 }, { sequelize, indexes: [
-  { fields: ['sort'] }
+  { fields: ['sort'] },
+  { fields: ['played'] },
+  { fields: ['playedToEnd'] },
+  { fields: ['playedAt'] }
 ]});
-
-class Play extends Model {}
-Play.init({
-  id: {type: DataTypes.UUID, defaultValue: Sequelize.UUIDV4, primaryKey: true},
-  playedToEnd: {type: DataTypes.BOOLEAN, defaultValue: false}
-}, { sequelize, indexes: [
-  { fields: ['playedToEnd'] }
-]})
 
 class Vote extends Model {}
 Vote.init({
@@ -60,13 +58,15 @@ Vote.init({
 
 
 User.hasMany(Track)
-Track.belongsTo(User, {foreignKey: {name: 'submitUser', type: DataTypes.UUID}})
+User.hasMany(PlaylistItem)
+User.hasMany(Vote)
+Track.belongsTo(User, {foreignKey: {type: DataTypes.UUID}})
 Track.hasMany(PlaylistItem)
 Track.hasMany(Vote)
-Track.hasMany(Play)
-Vote.belongsTo(Track, {foreignKey: {type: DataTypes.UUID}})
-Play.belongsTo(Track, {foreignKey: {type: DataTypes.UUID}})
-PlaylistItem.belongsTo(Track, {foreignKey: {type: DataTypes.UUID}})
+Vote.belongsTo(Track, {foreignKey: {type: DataTypes.UUID, allowNull: false}})
+Vote.belongsTo(User, {foreignKey: {type: DataTypes.UUID, allowNull: false}})
+PlaylistItem.belongsTo(Track, {foreignKey: {type: DataTypes.UUID, allowNull: false}})
+PlaylistItem.belongsTo(User, {foreignKey: {type: DataTypes.UUID}})
 Playlist.hasMany(PlaylistItem)
 
 
@@ -77,7 +77,6 @@ module.exports = {
   Track,
   Playlist,
   PlaylistItem,
-  Play,
   Vote
 }
 

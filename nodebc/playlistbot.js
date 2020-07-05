@@ -4,9 +4,11 @@ const faker = require('faker')
 const execa = require('execa')
 const mkdirp = require('mkdirp')
 const { SoupClient } = require('./lib/soupclient')
-const { sequelize, User, Track, Playlist, PlaylistItem, Play, Vote} = require('./lib/plb-models')
+const { sequelize, User, Track, Playlist, PlaylistItem, Vote} = require('./lib/plb-models')
 
 const urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/
+
+const playlistsorter = 0
 
 async function main() {
 
@@ -120,6 +122,20 @@ async function main() {
     await soupClient.execGstCommand(command)
   }
 
+  const ensureTrackIsQueued = async (playlist, track, user) => {
+    // search for playlistitem that has the track
+    const x = await playlist.getPlaylistItems({order: [['sort', 'DESC']], limit: 1})
+    console.log("x:", x)
+    let sort = 1.0
+    if (x.length > 0) {
+      sort = x[0].sort + 1.0
+    }
+    console.log("sort:", sort)
+    pli = await playlist.createPlaylistItem({sort, UserId: user.id, TrackId: track.id})
+    .then(pli => pli.save())
+    console.log("pli", pli)
+  }
+
   const handleCommand = async function(playlist, chatMessage) {
     if (!soupClient.joined) {
       console.log('Not joined')
@@ -131,7 +147,7 @@ async function main() {
       console.log("playlist item url command received")
       const url = matched[1]
 
-      const [submitUser, created] = await User.findOrCreate({
+      const [user, created] = await User.findOrCreate({
         where: { name: chatMessage.name }
       })
 
@@ -139,7 +155,9 @@ async function main() {
 
       if (!track) {
         console.log(`Track for ${url} not found, creating a new one`)
-        track = await Track.create({url, submitUser, state: 'ADDED'})
+        track = await Track.create({url, state: 'ADDED'})
+        .then(t => t.setUser(user))
+        .then(t => t.save())
       } else {
         console.log(`Track for ${url} already exists`, track)
         // allow retries
@@ -148,7 +166,11 @@ async function main() {
           track.state = 'ADDED'
           await track.save()
         } else {
-          await soupClient.sendChatMessage(`@${chatMessage.name}: This item is already known and the current state of it is ${track.state}`)
+          await soupClient.sendChatMessage(`@${chatMessage.name}: *${track.name}* is already known and the current state of it is ${track.state}`)
+          if (track.state === 'READY') {
+            await ensureTrackIsQueued(playlist, track, user)
+            await soupClient.sendChatMessage(`@${chatMessage.name}: *${track.name}* is queued to play`)
+          }
           return
         }
       }
@@ -184,24 +206,29 @@ async function main() {
 
         if (dlmatches && dlmatches[1]) {
           track.filepath = dlmatches[1].replace(config.trackDataRoot + '/', '')
+          track.name = track.filepath
           track.state = 'READY'
           await track.save()
         } else if (dlmatches2 && dlmatches2[1]) {
           track.filepath = dlmatches2[1].replace(config.trackDataRoot + '/', '')
+          track.name = track.filepath
           track.state = 'READY'
           await track.save()
         } else {
           throw(new Error('could not get file name after download'))
-        }        
+        }
       } catch(e) {
         track.state = 'FAILED'
         await track.save()
         // this should be used for direct downloads, those fail on youtube-dl
         console.log("catched", e)
+        return
       }
 
-      console.log("all tracks:", await Track.findAll())
-      await soupClient.sendChatMessage(`@${chatMessage.name}: Your track has been downloaded to *${track.filepath}*`)
+      // console.log("all tracks:", await Track.findAll())
+      await soupClient.sendChatMessage(`@${chatMessage.name}: Your *track ${track.name}* is ready`)
+      await ensureTrackIsQueued(playlist, track, user)
+      await soupClient.sendChatMessage(`@${chatMessage.name}: *${track.name}* is queued to play`)
 
       // lines = formatres.stdout.split(/\n/)
       // let format = null
@@ -252,6 +279,31 @@ async function main() {
       // }
     }
 
+    else if (matched = chatMessage.text.match(/^list/)) {
+      // plis = await pl.getPlaylistItems({include: [ {model: Track, include: [User] }]})
+
+      const items = await playlist.getPlaylistItems({
+        include: [
+          {model: Track, include: [User] },
+          {model: User}
+        ], order: [
+          ['sort', 'DESC']
+        ]
+      })
+      console.log("items:", items)
+      console.log("tracks:", items.map(i => i.Track))
+      const reply = items.map(i => `* ${i.Track.name}<br>  (subm. by _@${i.Track.User.name}_)`).join("\n")
+      await soupClient.sendChatMessage(`### Playlist:\n${reply}`)
+    }
+
+    else if (matched = chatMessage.text.match(/^start/)) {
+      
+    }
+
+    else if (matched = chatMessage.text.match(/^clear/)) {
+      
+    }
+
     // unknown
     else {
       await soupClient.sendChatMessage(`### Commands:
@@ -285,7 +337,6 @@ async function main() {
   await Track.sync({force: initDatabase})
   await Playlist.sync({force: initDatabase})
   await PlaylistItem.sync({force: initDatabase})
-  await Play.sync({force: initDatabase})
   await Vote.sync({force: initDatabase})
   // seed a default playlist
   const [playlist, created] = await Playlist.findOrCreate({
