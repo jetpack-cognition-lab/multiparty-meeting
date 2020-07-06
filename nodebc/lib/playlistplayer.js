@@ -126,7 +126,7 @@ class PlaylistPlayer extends EventEmitter {
 
 
   async playNext() {
-    if (this.state === 'PLAYING') {
+    if (this.state !== 'PLAYING') {
       try {
         if (this.currentItem) {
           this.currentItem.played = true
@@ -136,6 +136,7 @@ class PlaylistPlayer extends EventEmitter {
         this.currentItem = await this.getNextPlaylistItem()
         console.log("currentItem:", this.currentItem.id)
         this.soupClient.sendChatMessage(`Playing ${this.currentItem.Track.filepath}`)
+        this.state = 'PLAYING'
         this.createPipelineForTrack(this.currentItem.Track)
         console.log("created pipeline:", this.currentItem.id)
       } catch (e) {
@@ -152,8 +153,9 @@ class PlaylistPlayer extends EventEmitter {
     this.playlist = await Playlist.findByPk(this.playlist.id)
     console.log("playlist:", this.playlist)
     // set state to 'PLAYING'
-    this.state = 'PLAYING'
+    this.state = 'WAITING'
     this.soupClient.on('play_done', async () => {
+      this.state = 'WAITING'
       console.log("PLAY_DONE")
       await this.soupClient.stopCurrentTrack()
       await new Promise(r => setTimeout(r, 100))
