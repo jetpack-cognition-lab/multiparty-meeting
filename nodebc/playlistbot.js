@@ -201,9 +201,13 @@ async function main() {
         const dlmatches = dlres.stdout.match(re)
         console.log('dlmatches', re, dlmatches ? dlmatches[1]: dlmatches)
 
-        const re2 = new RegExp('\\[download\\] (.*) has already been downloaded and merged')
+        const re2 = new RegExp('\\[download\\] (.*) has already been downloaded')
         const dlmatches2 = dlres.stdout.match(re2)
         console.log('dlmatches2', re2, dlmatches2 ? dlmatches2[1]: dlmatches2)
+
+        const re3 = new RegExp('\\[download\\] Destination: (.*)')
+        const dlmatches3 = dlres.stdout.match(re3)
+        console.log('dlmatches2', re3, dlmatches3 ? dlmatches3[1]: dlmatches3)
 
         if (dlmatches && dlmatches[1]) {
           track.filepath = dlmatches[1].replace(config.trackDataRoot + '/', '')
@@ -212,6 +216,11 @@ async function main() {
           await track.save()
         } else if (dlmatches2 && dlmatches2[1]) {
           track.filepath = dlmatches2[1].replace(config.trackDataRoot + '/', '')
+          track.name = track.filepath
+          track.state = 'READY'
+          await track.save()
+        } else if (dlmatches3 && dlmatches3[1]) {
+          track.filepath = dlmatches3[1].replace(config.trackDataRoot + '/', '')
           track.name = track.filepath
           track.state = 'READY'
           await track.save()

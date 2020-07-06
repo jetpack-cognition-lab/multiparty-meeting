@@ -156,7 +156,7 @@ class PlaylistPlayer extends EventEmitter {
     this.soupClient.on('play_done', async () => {
       console.log("PLAY_DONE")
       await this.soupClient.stopCurrentTrack()
-      await new Promise(r => setTimeout(r, 1000))
+      await new Promise(r => setTimeout(r, 100))
       this.playNext()
     })
     this.playNext()
