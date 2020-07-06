@@ -12,7 +12,9 @@ const AudioPeers = (props) =>
 	} = props;
 
   const getAudioVolume = (peerId) =>
-    peerId && peers[peerId] ? peers[peerId].audioVolume : 1.0
+    peerId && peers[peerId] && peers[peerId].audioVolume !== undefined
+      ? peers[peerId].audioVolume
+      : 1.0
 
 	return (
 		<div data-component='AudioPeers'>
