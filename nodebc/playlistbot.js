@@ -319,13 +319,24 @@ async function main() {
 
 * Skip to next item:
 \`\`\`
-/plb n
+/plb next
+\`\`\`
+
+* List items:
+\`\`\`
+/plb list
 \`\`\`
 
 * Stop playing:
 \`\`\`
 /plb stop
-\`\`\``
+\`\`\`
+
+* Start playing:
+\`\`\`
+/plb start
+\`\`\`
+`
 )
     }
   }

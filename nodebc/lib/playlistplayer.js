@@ -57,7 +57,7 @@ class PlaylistPlayer extends EventEmitter {
          ! queue \
          ! decodebin \
          ! videoconvert \
-         ! vp8enc target-bitrate=2000000 deadline=1 cpu-used=4 \
+         ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
          ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
          ! rtpbin.send_rtp_sink_0 \
         rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
@@ -126,7 +126,7 @@ class PlaylistPlayer extends EventEmitter {
 
 
   async playNext() {
-    if (this.state !== 'PLAYING') {
+    if (this.state === 'WAITING') {
       try {
         if (this.currentItem) {
           this.currentItem.played = true
@@ -155,10 +155,12 @@ class PlaylistPlayer extends EventEmitter {
     // set state to 'PLAYING'
     this.state = 'WAITING'
     this.soupClient.on('play_done', async () => {
-      this.state = 'WAITING'
-      console.log("PLAY_DONE")
-      await this.soupClient.stopCurrentTrack()
-      await new Promise(r => setTimeout(r, 100))
+      if (this.state !== 'STOPPED') {
+        this.state = 'WAITING'
+        console.log("PLAY_DONE")
+        await this.soupClient.stopCurrentTrack()
+        await new Promise(r => setTimeout(r, 100))
+      }
       this.playNext()
     })
     this.playNext()
