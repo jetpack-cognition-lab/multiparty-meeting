@@ -106,7 +106,33 @@ const styles = (theme) =>
 				fontSize      : 20,
 				color         : 'rgba(255, 255, 255, 0.55)'
 			}
-		}
+		},
+    volumeSlider : {
+      position             : 'absolute',
+      transform            : 'rotate(270deg)',
+      margin               : '4px',
+      '-webkit-appearance' : 'none',
+      outline              : 'none',
+      border               : 0,
+      background           : '#888',
+      height               : '5px',
+      '&::-webkit-slider-thumb': {
+        '-webkit-appearance' : 'none',
+        appearance: 'none',
+        borderRadius: '50%',
+        width: '20px',
+        height: '20px',
+        background: '#ddd',
+        cursor: 'pointer',
+      },
+      '&::-moz-range-thumb': {
+        borderRadius: '50%',
+        width: '20px',
+        height: '20px',
+        background: '#ddd',
+        cursor: 'pointer',
+      }
+    }
 	});
 
 const Peer = (props) =>
@@ -239,6 +265,8 @@ const Peer = (props) =>
               step={0.1}
               value={audioVolume}
               onChange={setAudioVolume}
+              disabled={!micConsumer}
+              className={classes.volumeSlider}
             />
 						<Tooltip
 							title={intl.formatMessage({
