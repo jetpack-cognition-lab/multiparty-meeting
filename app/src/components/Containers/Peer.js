@@ -8,6 +8,7 @@ import { withRoomContext } from '../../RoomContext';
 import { withStyles } from '@material-ui/core/styles';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import * as roomActions from '../../actions/roomActions';
+import { setPeerAudioVolume } from '../../actions/peerActions';
 import { useIntl, FormattedMessage } from 'react-intl';
 import VideoView from '../VideoContainers/VideoView';
 import Tooltip from '@material-ui/core/Tooltip';
@@ -105,7 +106,33 @@ const styles = (theme) =>
 				fontSize      : 20,
 				color         : 'rgba(255, 255, 255, 0.55)'
 			}
-		}
+		},
+    volumeSlider : {
+      position             : 'absolute',
+      transform            : 'rotate(270deg)',
+      margin               : '4px',
+      '-webkit-appearance' : 'none',
+      outline              : 'none',
+      border               : 0,
+      background           : '#888',
+      height               : '5px',
+      '&::-webkit-slider-thumb': {
+        '-webkit-appearance' : 'none',
+        appearance: 'none',
+        borderRadius: '50%',
+        width: '20px',
+        height: '20px',
+        background: '#ddd',
+        cursor: 'pointer',
+      },
+      '&::-moz-range-thumb': {
+        borderRadius: '50%',
+        width: '20px',
+        height: '20px',
+        background: '#ddd',
+        cursor: 'pointer',
+      }
+    }
 	});
 
 const Peer = (props) =>
@@ -153,6 +180,11 @@ const Peer = (props) =>
 	);
 
 	const smallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const setAudioVolume = (ev) =>
+    props.setAudioVolume(peer.id, parseFloat(ev.target.value));
+
+  const audioVolume = peer.audioVolume !== undefined ? peer.audioVolume : 1.0;
 
 	const rootStyle =
 	{
@@ -226,6 +258,16 @@ const Peer = (props) =>
 							}, 2000);
 						}}
 					>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.1}
+              value={audioVolume}
+              onChange={setAudioVolume}
+              disabled={!micConsumer}
+              className={classes.volumeSlider}
+            />
 						<Tooltip
 							title={intl.formatMessage({
 								id             : 'device.muteAudio',
@@ -512,6 +554,7 @@ Peer.propTypes =
 	smallButtons             : PropTypes.bool,
 	toggleConsumerFullscreen : PropTypes.func.isRequired,
 	toggleConsumerWindow     : PropTypes.func.isRequired,
+  setAudioVolume           : PropTypes.func.isRequired,
 	classes                  : PropTypes.object.isRequired,
 	theme                    : PropTypes.object.isRequired
 };
@@ -545,7 +588,11 @@ const mapDispatchToProps = (dispatch) =>
 		{
 			if (consumer)
 				dispatch(roomActions.toggleConsumerWindow(consumer.id));
-		}
+		},
+    setAudioVolume: (peerId, volume) =>
+    {
+        dispatch(setPeerAudioVolume(peerId, volume));
+    }
 	};
 };
 

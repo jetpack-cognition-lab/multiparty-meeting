@@ -30,7 +30,8 @@ export const Peer = PropTypes.shape(
 	{
 		id          : PropTypes.string.isRequired,
 		displayName : PropTypes.string,
-		consumers   : PropTypes.arrayOf(PropTypes.string).isRequired
+		consumers   : PropTypes.arrayOf(PropTypes.string).isRequired,
+    audioVolume : PropTypes.number
 	});
 
 export const Consumer = PropTypes.shape(

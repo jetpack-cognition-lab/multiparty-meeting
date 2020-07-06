@@ -3,66 +3,74 @@ import PropTypes from 'prop-types';
 
 export default class PeerAudio extends React.PureComponent
 {
-	constructor(props)
-	{
-		super(props);
+  constructor(props)
+  {
+    super(props);
 
-		// Latest received audio track.
-		// @type {MediaStreamTrack}
-		this._audioTrack = null;
-	}
+    // Latest received audio track.
+    // @type {MediaStreamTrack}
+    this._audioTrack = null;
+    this.ref = React.createRef();
+  }
 
-	render()
-	{
-		return (
-			<audio
-				ref='audio'
-				autoPlay
-			/>
-		);
-	}
+  render()
+  {
+    return (
+      <audio
+        ref={this.ref}
+        autoPlay
+      />
+    );
+  }
 
-	componentDidMount()
-	{
-		const { audioTrack } = this.props;
+  componentDidMount()
+  {
+    const { audioTrack } = this.props;
 
-		this._setTrack(audioTrack);
-	}
+    this._setTrack(audioTrack);
+  }
 
-	// eslint-disable-next-line camelcase
-	UNSAFE_componentWillReceiveProps(nextProps)
-	{
-		const { audioTrack } = nextProps;
+  componentDidUpdate(prevProps) {
+    const { audioTrack, audioVolume } = this.props;
 
-		this._setTrack(audioTrack);
-	}
+    if (audioTrack !== this._audioTrack) {
+      this._setTrack(audioTrack);
+    }
 
-	_setTrack(audioTrack)
-	{
-		if (this._audioTrack === audioTrack)
-			return;
+    if (this.ref.current) {
+      this.ref.current.volume = audioVolume;
+    }
+  }
 
-		this._audioTrack = audioTrack;
+  _setTrack(audioTrack)
+  {
+    if (this._audioTrack === audioTrack)
+      return;
 
-		const { audio } = this.refs;
+    this._audioTrack = audioTrack;
 
-		if (audioTrack)
-		{
-			const stream = new MediaStream();
+    if (this.ref.current) {
+      if (audioTrack)
+      {
+        const stream = new MediaStream();
 
-			if (audioTrack)
-				stream.addTrack(audioTrack);
+        if (audioTrack) {
+          stream.addTrack(audioTrack);
+        }
 
-			audio.srcObject = stream;
-		}
-		else
-		{
-			audio.srcObject = null;
-		}
-	}
+        this.ref.current.srcObject = stream;
+        this.ref.current.volume = this.props.audioVolume;
+      }
+      else
+      {
+        this.ref.current.srcObject = null;
+      }
+    }
+  }
 }
 
 PeerAudio.propTypes =
 {
-	audioTrack : PropTypes.any
+audioTrack : PropTypes.any,
+             audioVolume: PropTypes.number
 };
