@@ -270,15 +270,6 @@ async function main() {
       // await soupClient.sendChatMessage(`Playing youtube video ${url}`)
     }
 
-    // stop command
-    else if (matched = chatMessage.text.match(/^stop/)) {
-      // console.log(soupClient)
-      // if (soupClient.playing === true) {
-      //   await soupClient.sendChatMessage(`I am stopping the currently running track ${state.url}.`)
-      //   console.log("stopping current track")
-      //   await soupClient.stopCurrentTrack()
-      // }
-    }
 
     else if (matched = chatMessage.text.match(/^list/)) {
       // plis = await pl.getPlaylistItems({include: [ {model: Track, include: [User] }]})
@@ -297,12 +288,16 @@ async function main() {
       await soupClient.sendChatMessage(`### Playlist:\n${reply}`)
     }
 
-    else if (matched = chatMessage.text.match(/^start/)) {
-      
+    else if (matched = chatMessage.text.match(/^next/)) {
+      await playlistPlayer.skip()
     }
 
-    else if (matched = chatMessage.text.match(/^clear/)) {
-      
+    else if (matched = chatMessage.text.match(/^stop/)) {
+      await playlistPlayer.stop()
+    }
+
+    else if (matched = chatMessage.text.match(/^start/)) {
+      await playlistPlayer.start()
     }
 
     // unknown

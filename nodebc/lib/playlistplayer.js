@@ -44,6 +44,11 @@ class PlaylistPlayer extends EventEmitter {
         demux = 'matroskademux name=demux'
       }
 
+      // ! vp8enc target-bitrate=2000000 deadline=1 cpu-used=4 \
+      // ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
+         // ! x264enc qp-min=18 \
+         // ! rtph264pay pt=${videoPt} ssrc=${videoSSRC} \
+
       command = `/usr/bin/gst-launch-1.0 \
         rtpbin name=rtpbin latency=2000 rtp-profile=avpf \
         filesrc location="${this.fileRoot}/${track.filepath}" \
@@ -103,20 +108,43 @@ class PlaylistPlayer extends EventEmitter {
     return next
   }
 
-  async playnext() {
+  async skip() {
+    await this.soupClient.stopCurrentTrack()
+  }
+
+  async stop() {
+    this.state = 'STOPPED'
+    await this.soupClient.stopCurrentTrack()
+  }
+
+
+  async start() {
+    if (this.state === 'STOPPED') {
+      await this.play()
+    }
+  }
+
+
+  async playNext() {
     if (this.state === 'PLAYING') {
       try {
+        if (this.currentItem) {
+          this.currentItem.played = true
+          await this.currentItem.save()
+        }
+        this.playlist = await Playlist.findByPk(this.playlist.id)
         this.currentItem = await this.getNextPlaylistItem()
         console.log("currentItem:", this.currentItem.id)
-        await this.createPipelineForTrack(this.currentItem.Track)
+        this.soupClient.sendChatMessage(`Playing ${this.currentItem.Track.filepath}`)
+        this.createPipelineForTrack(this.currentItem.Track)
         console.log("created pipeline:", this.currentItem.id)
       } catch (e) {
         console.log("catcheds error:", e)
         this.state = 'STOPPED'
         this.currentItem = null
       }
-     }
-   }
+    }
+  }
 
   async play() {
     console.log("playlist: PLAY!")
@@ -127,13 +155,11 @@ class PlaylistPlayer extends EventEmitter {
     this.state = 'PLAYING'
     this.soupClient.on('play_done', async () => {
       console.log("PLAY_DONE")
-      if (this.currentItem) {
-        this.currentItem.played = true
-        await this.currentItem.save()
-      }
-      //this.playnext()
+      await this.soupClient.stopCurrentTrack()
+      await new Promise(r => setTimeout(r, 1000))
+      this.playNext()
     })
-    this.playnext()
+    this.playNext()
   }
 }
 

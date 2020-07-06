@@ -76,7 +76,7 @@ class SoupClient extends EventEmitter {
         }
         default:
         {
-          console.log("notification received", notification)
+          // console.log("notification received", notification)
           this.emit(notification.method, notification.data)
           break;
         }
@@ -124,7 +124,7 @@ class SoupClient extends EventEmitter {
       const result = execa.command(command, {shell: false, env: {'GST_DEBUG': '2'}})
 
       result.on('exit', () => {
-        console.log("exited", result)
+        // console.log("exited", result)
         this.stopProducers()
         this.gstProcess = null
         this.playing = false
@@ -133,32 +133,34 @@ class SoupClient extends EventEmitter {
       this.gstProcess = result
       this.playing = true
 
-      await result
-      console.log('res:', result.stdout)
-      console.log('err:', result.stderr)
+      // await result
+      // console.log('res:', result.stdout)
+      // console.log('err:', result.stderr)
 
     } catch (error) {
       this.playing = false
       this.emit('play_done')
-      //await stopProducers()      
+      await stopProducers()      
       console.log("catched error in execGstCommand: ", error)
     }
   }
 
   async stopProducers() {
-    if (this.transportOps) {
-      await this.sendRequest('closeProducer', {producerId: this.transportOpts.audioProducer.id })
-      await this.sendRequest('closeProducer', {producerId: this.transportOpts.videoProducer.id })
-      await this.sendRequest('closeTransport', {transportId: this.transportOpts.audioTransportId })
-      await this.sendRequest('closeTransport', {transportId: this.transportOpts.videoTransportId })
+    if (this.transportOpts) {
+      console.log("stopproducers")
+
+      await this.sendRequest('closeProducer', {producerId: this.transportOpts.audioProducer.id }).catch(e => console.log(e))
+      await this.sendRequest('closeProducer', {producerId: this.transportOpts.videoProducer.id }).catch(e => console.log(e))
+      await this.sendRequest('closeTransport', {transportId: this.transportOpts.audioTransportId }).catch(e => console.log(e))
+      await this.sendRequest('closeTransport', {transportId: this.transportOpts.videoTransportId }).catch(e => console.log(e))
     }
   }
 
   async startProducers() {
-    console.log("startproducers", this.transportOpts)
+    console.log("startproducers") //, this.transportOpts)
 
     // create a transport for audio
-    console.log("createPlainTransport")
+    //console.log("createPlainTransport")
     const audioTransportInfo = await this.sendRequest(
       'createPlainTransport',
       {
@@ -171,10 +173,10 @@ class SoupClient extends EventEmitter {
     const audioTransportPort = audioTransportInfo.port
     const audioTransportRtcpPort = audioTransportInfo.rtcpPort
 
-    console.log("audio transportInfo:", audioTransportInfo)
+    // console.log("audio transportInfo:", audioTransportInfo)
 
     // create a transport for video
-    console.log("createPlainTransport")
+    // console.log("createPlainTransport")
     const videoTransportInfo = await this.sendRequest(
       'createPlainTransport',
       {
@@ -187,7 +189,7 @@ class SoupClient extends EventEmitter {
     const videoTransportPort = videoTransportInfo.port
     const videoTransportRtcpPort = videoTransportInfo.rtcpPort
 
-    console.log("video transportInfo:", videoTransportInfo)
+    // console.log("video transportInfo:", videoTransportInfo)
 
     // produce
     const audioProducer = await this.sendRequest(
@@ -225,7 +227,7 @@ class SoupClient extends EventEmitter {
         }
       }
     )
-    console.log("audioproducer: ", audioProducer)
+    // console.log("audioproducer: ", audioProducer)
     // await this.sendRequest('pauseProducer', { producerId: audioProducer.id })
 
     const videoProducer = await this.sendRequest(
@@ -259,7 +261,7 @@ class SoupClient extends EventEmitter {
         }
       }
     )
-    console.log("videoproducer: ", videoProducer)
+    // console.log("videoproducer: ", videoProducer)
     // await this.sendRequest('pauseProducer', {producerId: videoProducer.id })
     this.transportOpts = {
       videoTransportId,
@@ -293,7 +295,7 @@ class SoupClient extends EventEmitter {
               'kind': 'audio',
               'preferredPayloadType': 100,
               'channels': 2,
-              'parameters': { 'useinbandfec': 1 },
+              'parameters': { 'useinbandfec': 1, 'stereo': 1 },
               'rtcpFeedback': []
             },
             {
