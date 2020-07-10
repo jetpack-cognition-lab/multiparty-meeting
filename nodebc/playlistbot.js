@@ -363,7 +363,7 @@ async function main() {
   console.log("All models were synchronized successfully.");
 
   //////////////////////////////////////////
-  const roomId = 'miniclub'
+  const roomId = config.roomName || 'miniclub'
   const displayName = "PlaylistBot"
   const url = config.mainurl || 'https://soup.jetpack.cl:5443'
 
@@ -372,7 +372,8 @@ async function main() {
 
   soupClient.on('ready', async () => {
     console.log("ready! starting playlist player")
-    playlistPlayer.play()
+    // playlistPlayer.play()
+    await soupClient.sendChatMessage('Hello. Type `/plb help` for help.')
   })
 
   soupClient.on('chatMessage', async function (data) {

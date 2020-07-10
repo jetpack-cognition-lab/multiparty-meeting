@@ -9,13 +9,13 @@ module.exports =
 	ffmpegbin: '/usr/bin/ffmpeg',
 
 	// optional jack source options for source.js
-	jackSourceOptions: 'connect=1 port-pattern="system:capture_(1|2)"'
+	jackSourceOptions: 'connect=1 port-pattern="system:capture_(1|2)"',
 
 	// playlistBot
 	// create database tables, this DELETES ALL DATA
-	initDatabase: false
+	initDatabase: false,
 	// base directory of downloaded stuff
-	trackDataRoot: './trackdata'
+	trackDataRoot: './trackdata',
 
 	// Auth conf
 	/*
