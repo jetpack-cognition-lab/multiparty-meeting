@@ -15,11 +15,17 @@ class PlaylistPlayer extends EventEmitter {
   }
 
   async playDoneHandler() {
-    console.log('playdone')
     if (this.state !== 'STOPPED') {
       this.state = 'WAITING'
       console.log("PLAY_DONE")
       await this.soupClient.stopCurrentTrack()
+      if (this.currentItem) {
+        this.currentItem.played = true
+        this.currentItem.playedToEnd = true
+        this.currentItem.playedAt = new Date()
+        this.currentItem.Track.createPlay()
+        await this.currentItem.save()
+      }
       await new Promise(r => setTimeout(r, 100))
     }
     this.playNext()
@@ -107,17 +113,29 @@ class PlaylistPlayer extends EventEmitter {
 
   async getNextPlaylistItem() {
     const count = await this.playlist.countPlaylistItems()
-    if (count === 0) {
-      throw new Error('empty playlist')
-    }
+    // if (count === 0) {
+    //   throw new Error('empty playlist')
+    // }
 
-    let next = await this.playlist.getPlaylistItems({where: {played: false}, include: [Track], order: [['sort', 'DESC']], limit: 1})
+    let next = await this.playlist.getPlaylistItems({where: {played: false}, include: [Track], order: [['sort', 'ASC']], limit: 1})
     if (next.length > 0) {
       next = next[0]
     } else {
-      // we have no umplayed items, start at the beginning for now
-      next = await this.playlist.getPlaylistItems({include: [Track], order: [Sequelize.literal('RANDOM()')], limit: 1})
-      next = next[0]
+      // we have no unplayed items, create a new one from a random track
+      const track = await Track.findOne({ order: [Sequelize.literal('RANDOM()')] })
+      console.log('track:', track)
+      const maxPli = await this.playlist.getPlaylistItems({order: [['sort', 'DESC']], limit: 1})
+      console.log('maxPli:', maxPli)
+      next = await track.createPlaylistItem({
+        sort: 1.0 + (maxPli[0] && maxPli[0].sort > 0 ? maxPli[0].sort : 0),
+        PlaylistId: this.playlist.id
+      })
+      next.Track = track
+      next = await next.save()
+      console.log('next:', next)
+
+      // next = await this.playlist.getPlaylistItems({include: [Track], order: [Sequelize.literal('RANDOM()')], limit: 1})
+      // next = next[0]
     }
     return next
   }
@@ -145,10 +163,14 @@ class PlaylistPlayer extends EventEmitter {
   async playNext() {
     if (this.state === 'WAITING') {
       try {
-        if (this.currentItem) {
-          this.currentItem.played = true
-          await this.currentItem.save()
-        }
+        // if (this.currentItem) {
+        //   this.currentItem.played = true
+        //   this.currentItem.playedToEnd = true
+        //   this.currentItem.playedAt = new Date()
+        //   this.currentItem.Track.createPlay()
+        //   await this.currentItem.save()
+        //   // const play = this.currentItem.Track.
+        // }
         this.playlist = await Playlist.findByPk(this.playlist.id)
         this.currentItem = await this.getNextPlaylistItem()
         console.log("currentItem:", this.currentItem.id)
@@ -158,6 +180,7 @@ class PlaylistPlayer extends EventEmitter {
         console.log("created pipeline:", this.currentItem.id)
       } catch (e) {
         console.log("catcheds error:", e)
+        this.soupClient.sendChatMessage(`Error ${e}`)
         this.state = 'STOPPED'
         this.currentItem = null
       }

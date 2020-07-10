@@ -5,7 +5,7 @@ const execa = require('execa')
 const mkdirp = require('mkdirp')
 const { SoupClient } = require('./lib/soupclient')
 const { PlaylistPlayer } = require('./lib/playlistplayer')
-const { sequelize, User, Track, Playlist, PlaylistItem, Vote} = require('./lib/plb-models')
+const { sequelize, User, Track, Playlist, PlaylistItem, Vote, Play} = require('./lib/plb-models')
 
 const urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/
 
@@ -234,49 +234,10 @@ async function main() {
         console.log("catched", e)
         return
       }
-
-      // console.log("all tracks:", await Track.findAll())
       await soupClient.sendChatMessage(`@${chatMessage.name}: Your *track ${track.name}* is ready`)
       await ensureTrackIsQueued(playlist, track, user)
       await soupClient.sendChatMessage(`@${chatMessage.name}: *${track.name}* is queued to play`)
-
-      // lines = formatres.stdout.split(/\n/)
-      // let format = null
-      // let isVideo = false
-      // lines.forEach((line) => {
-      //   if (line.match(/^format/)) { return }
-      //   parts = line.split(/\s+/)
-      //   const f = parts[0]
-      //   switch (f) {
-      //     case 'http_mp3_128':
-      //     case 'mp3':
-      //     case 'mp3-128':
-      //       format = f
-      //       isVideo = false
-      //       break
-      //     default:
-      //       break
-      //   }
-      // })
-
       const filename = `${config.trackDataRoot || '.'}/`
-
-      // // if (!url.match(/^(http(s)??\:\/\/)?(www\.)?((youtube\.com\/watch\?v=)|(youtu.be\/))([a-zA-Z0-9\-_])+/)) {
-      // //  console.log(`play url did not match: ${url}`)
-      // //  await sendChatMessage(`This does not look like a youtube URL to me: ${url}. I will not play it.`)
-      // //  return
-      // // }
-
-
-      // if (soupClient.playing === true) {
-      //   console.log("stopping current track")
-      //   await soupClient.sendChatMessage(`Stopping the currently running track ${soupClient.url}.`)
-      //   await soupClient.stopCurrentTrack()
-      // }
-      // await soupClient.sendChatMessage(`Attempt on youtube video ${url}`)
-      // await soupClient.startYoutubeGst(url)
-      // soupClient.url = url
-      // await soupClient.sendChatMessage(`Playing youtube video ${url}`)
     }
 
 
@@ -285,15 +246,20 @@ async function main() {
 
       const items = await playlist.getPlaylistItems({
         include: [
-          {model: Track, include: [User] },
+          {model: Track, include: [User, Play, Vote] },
           {model: User}
         ], order: [
-          ['sort', 'DESC']
+          ['played', 'DESC'],
+          ['sort', 'ASC']
         ]
       })
-      console.log("items:", items)
-      console.log("tracks:", items.map(i => i.Track))
-      const reply = items.map(i => `* ${i.Track.name}<br>  (subm. by _@${i.Track.User.name}_)`).join("\n")
+      // console.log("item:", items[0])
+      // console.log("tracks:", items.map(i => i.Track))
+      const reply = items.map(i => {
+        // console.log(playlistPlayer.currentItem, i.id)
+        const c = playlistPlayer.currentItem && i.id === playlistPlayer.currentItem.id ? '**' : ''
+        return `* ${c}${i.Track.name} (Plays: ${i.Track.Plays.length})${c} srt:${i.sort} pl:${i.played}`
+      }).join("\n")
       await soupClient.sendChatMessage(`### Playlist:\n${reply}`)
     }
 
@@ -354,6 +320,7 @@ async function main() {
   await Playlist.sync({force: initDatabase})
   await PlaylistItem.sync({force: initDatabase})
   await Vote.sync({force: initDatabase})
+  await Play.sync({force: initDatabase})
   // seed a default playlist
   const [playlist, created] = await Playlist.findOrCreate({
     where: { name: 'default' }
@@ -371,7 +338,7 @@ async function main() {
   const playlistPlayer = new PlaylistPlayer(playlist, config.trackDataRoot, soupClient)
 
   soupClient.on('ready', async () => {
-    console.log("ready! starting playlist player")
+    console.log("ready.")
     // playlistPlayer.play()
     await soupClient.sendChatMessage('Hello. Type `/plb help` for help.')
   })

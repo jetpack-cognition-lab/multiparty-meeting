@@ -56,6 +56,11 @@ Vote.init({
   value: DataTypes.INTEGER
 }, { sequelize })
 
+class Play extends Model {}
+Play.init({
+  id: {type: DataTypes.UUID, defaultValue: Sequelize.UUIDV4, primaryKey: true}
+}, { sequelize })
+
 
 User.hasMany(Track)
 User.hasMany(PlaylistItem)
@@ -63,6 +68,8 @@ User.hasMany(Vote)
 Track.belongsTo(User, {foreignKey: {type: DataTypes.UUID}})
 Track.hasMany(PlaylistItem)
 Track.hasMany(Vote)
+Track.hasMany(Play)
+Play.belongsTo(Track, {foreignKey: {type: DataTypes.UUID, allowNull: false}})
 Vote.belongsTo(Track, {foreignKey: {type: DataTypes.UUID, allowNull: false}})
 Vote.belongsTo(User, {foreignKey: {type: DataTypes.UUID, allowNull: false}})
 PlaylistItem.belongsTo(Track, {foreignKey: {type: DataTypes.UUID, allowNull: false}})
@@ -77,6 +84,7 @@ module.exports = {
   Track,
   Playlist,
   PlaylistItem,
-  Vote
+  Vote,
+  Play
 }
 
