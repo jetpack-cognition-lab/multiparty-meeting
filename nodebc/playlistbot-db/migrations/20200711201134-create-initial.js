@@ -178,13 +178,13 @@ module.exports = {
         defaultValue: Sequelize.UUIDV4, 
         primaryKey: true
       },
-      'UserId': {
+      'TrackId': {
         type: Sequelize.UUID,
         references: {
-          model: 'Users',
+          model: 'Tracks',
           key: 'id',
         },
-        allowNull: true,
+        allowNull: false,
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL',
       },
