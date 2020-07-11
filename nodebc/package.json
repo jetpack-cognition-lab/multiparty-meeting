@@ -4,7 +4,9 @@
   "description": "",
   "main": "nodebc.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "sequelize-cli db:migrate",
+    "playlistbot": "node playlistbot.js"
   },
   "author": "",
   "license": "ISC",
@@ -15,6 +17,7 @@
     "mkdirp": "^1.0.4",
     "node-gstreamer-launch": "^0.1.4",
     "sequelize": "^6.2.3",
+    "sequelize-cli": "^6.2.0",
     "socket.io-client": "^2.3.0",
     "sqlite3": "^4.2.0"
   },
