@@ -1,5 +1,5 @@
 const { EventEmitter } = require('events')
-const { sequelize, User, Track, Playlist, PlaylistItem, Vote} = require('./plb-models')
+const { sequelize, User, Track, Playlist, PlaylistItem, Vote} = require('./models/plb-models')
 const { Sequelize } = require('sequelize')
 
 class PlaylistPlayer extends EventEmitter {
@@ -122,7 +122,7 @@ class PlaylistPlayer extends EventEmitter {
       next = next[0]
     } else {
       // we have no unplayed items, create a new one from a random track
-      const track = await Track.findOne({ order: [Sequelize.literal('RANDOM()')] })
+      const track = await Track.findOne({ state: 'READY', order: [Sequelize.literal('RANDOM()')] })
       console.log('track:', track)
       const maxPli = await this.playlist.getPlaylistItems({order: [['sort', 'DESC']], limit: 1})
       console.log('maxPli:', maxPli)

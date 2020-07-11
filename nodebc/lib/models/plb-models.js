@@ -12,7 +12,7 @@ User.init({
   name: DataTypes.STRING
 }, { sequelize, indexes: [
   { fields: ['name'] }
-] });
+]});
 
 class Track extends Model {}
 Track.init({

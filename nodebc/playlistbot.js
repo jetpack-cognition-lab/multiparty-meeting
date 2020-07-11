@@ -5,7 +5,7 @@ const execa = require('execa')
 const mkdirp = require('mkdirp')
 const { SoupClient } = require('./lib/soupclient')
 const { PlaylistPlayer } = require('./lib/playlistplayer')
-const { sequelize, User, Track, Playlist, PlaylistItem, Vote, Play} = require('./lib/plb-models')
+const { sequelize, User, Track, Playlist, PlaylistItem, Vote, Play} = require('./lib/models/plb-models')
 
 const urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/
 
