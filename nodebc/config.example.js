@@ -1,7 +1,7 @@
 const os = require('os');
 
 module.exports =
-    {
+{
 	// mainurl: 'https://space.miniclub.space:3443',
 	// youtubedlbin: '/usr/bin/youtube-dl',
 	mainurl: 'https://soup.jetpack.cl:5443',
@@ -12,10 +12,11 @@ module.exports =
 	jackSourceOptions: 'connect=1 port-pattern="system:capture_(1|2)"',
 
 	// playlistBot
-	// create database tables, this DELETES ALL DATA
-	initDatabase: false,
+	// to create a database, run yarn|npm run migrate
 	// base directory of downloaded stuff
 	trackDataRoot: './trackdata',
+	// roomName: 'miniclub',
+	// commandPrefix: '/plb',
 
 	// Auth conf
 	/*

@@ -5,7 +5,7 @@ const execa = require('execa')
 const mkdirp = require('mkdirp')
 const { SoupClient } = require('./lib/soupclient')
 const { PlaylistPlayer } = require('./lib/playlistplayer')
-const { sequelize, User, Track, Playlist, PlaylistItem, Vote, Play} = require('./lib/models/plb-models')
+const { sequelize, User, Track, Playlist, PlaylistItem, Vote, Play } = require('./lib/models/plb-models')
 
 const urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/
 
@@ -30,7 +30,7 @@ async function main() {
 
     const formatcmd = [
       '--list-formats',
-      url 
+      url
     ]
 
 
@@ -66,10 +66,10 @@ async function main() {
       `-f ${format}`,
       '-4',
       '--get-url',
-      url 
+      url
     ]
 
-    
+
     console.log("chosen format", format)
 
     console.log('getting yturl')
@@ -125,19 +125,19 @@ async function main() {
 
   const ensureTrackIsQueued = async (playlist, track, user) => {
     // search for playlistitem that has the track
-    const x = await playlist.getPlaylistItems({order: [['sort', 'DESC']], limit: 1})
+    const x = await playlist.getPlaylistItems({ order: [['sort', 'DESC']], limit: 1 })
     console.log("x:", x)
     let sort = 1.0
     if (x.length > 0) {
       sort = x[0].sort + 1.0
     }
     console.log("sort:", sort)
-    pli = await playlist.createPlaylistItem({sort, UserId: user.id, TrackId: track.id})
-    .then(pli => pli.save())
+    pli = await playlist.createPlaylistItem({ sort, UserId: user.id, TrackId: track.id })
+      .then(pli => pli.save())
     console.log("pli", pli)
   }
 
-  const handleCommand = async function(playlist, chatMessage) {
+  const handleCommand = async function (playlist, chatMessage) {
     if (!soupClient.joined) {
       console.log('Not joined')
       return
@@ -152,13 +152,13 @@ async function main() {
         where: { name: chatMessage.name }
       })
 
-      let track = await Track.findOne({where: {url}})
+      let track = await Track.findOne({ where: { url } })
 
       if (!track) {
         console.log(`Track for ${url} not found, creating a new one`)
-        track = await Track.create({url, state: 'ADDED'})
-        .then(t => t.setUser(user))
-        .then(t => t.save())
+        track = await Track.create({ url, state: 'ADDED' })
+          .then(t => t.setUser(user))
+          .then(t => t.save())
       } else {
         console.log(`Track for ${url} already exists`, track)
         // allow retries
@@ -180,34 +180,34 @@ async function main() {
 
       try {
         const dlcommand = [
-          `--verbose`, 
+          `--verbose`,
           `-f 'bestvideo[ext=mp4,height<=?1080]+bestaudio[ext=m4a]/best[ext=mp4]/best'`,
           `-o '${config.trackDataRoot}/%(title)s.%(ext)s'`,
-          `--write-description`, 
-          `--write-info-json`, 
+          `--write-description`,
+          `--write-info-json`,
           `-4`,
-          url 
+          url
         ]
         console.log('downloading', dlcommand)
 
         track.state = 'DOWNLOADING'
         await track.save()
 
-        const dlres = await execa(config.youtubedlbin, dlcommand, {shell: true})
+        const dlres = await execa(config.youtubedlbin, dlcommand, { shell: true })
         console.log('res:', dlres.stdout)
         // match ffmpeg output to get the final file name
-        
+
         const re = new RegExp('\\[ffmpeg\\] Merging formats into "(.*)"')
         const dlmatches = dlres.stdout.match(re)
-        console.log('dlmatches', re, dlmatches ? dlmatches[1]: dlmatches)
+        console.log('dlmatches', re, dlmatches ? dlmatches[1] : dlmatches)
 
         const re2 = new RegExp('\\[download\\] (.*) has already been downloaded')
         const dlmatches2 = dlres.stdout.match(re2)
-        console.log('dlmatches2', re2, dlmatches2 ? dlmatches2[1]: dlmatches2)
+        console.log('dlmatches2', re2, dlmatches2 ? dlmatches2[1] : dlmatches2)
 
         const re3 = new RegExp('\\[download\\] Destination: (.*)')
         const dlmatches3 = dlres.stdout.match(re3)
-        console.log('dlmatches2', re3, dlmatches3 ? dlmatches3[1]: dlmatches3)
+        console.log('dlmatches2', re3, dlmatches3 ? dlmatches3[1] : dlmatches3)
 
         if (dlmatches && dlmatches[1]) {
           track.filepath = dlmatches[1].replace(config.trackDataRoot + '/', '')
@@ -225,9 +225,9 @@ async function main() {
           track.state = 'READY'
           await track.save()
         } else {
-          throw(new Error('could not get file name after download'))
+          throw (new Error('could not get file name after download'))
         }
-      } catch(e) {
+      } catch (e) {
         track.state = 'FAILED'
         await track.save()
         // this should be used for direct downloads, those fail on youtube-dl
@@ -246,8 +246,8 @@ async function main() {
 
       const items = await playlist.getPlaylistItems({
         include: [
-          {model: Track, include: [User, Play, Vote] },
-          {model: User}
+          { model: Track, include: [User, Play, Vote] },
+          { model: User }
         ], order: [
           ['played', 'ASC'],
           ['sort', 'DESC']
@@ -282,30 +282,30 @@ async function main() {
       await soupClient.sendChatMessage(`### Commands:
 * Add an arbitrary url to the playlist:
 \`\`\`
-/plb http://example.com/something_nice
+${config.commandPrefix} http://example.com/something_nice
 \`\`\`
 
 * Skip to next item:
 \`\`\`
-/plb next
+${config.commandPrefix} next
 \`\`\`
 
 * List items:
 \`\`\`
-/plb list
+${config.commandPrefix} list
 \`\`\`
 
 * Stop playing:
 \`\`\`
-/plb stop
+${config.commandPrefix} stop
 \`\`\`
 
 * Start playing:
 \`\`\`
-/plb start
+${config.commandPrefix} start
 \`\`\`
 `
-)
+      )
     }
   }
 
@@ -317,12 +317,12 @@ async function main() {
 
   const initDatabase = config.initDatabase || false
 
-  await User.sync({force: initDatabase})
-  await Track.sync({force: initDatabase})
-  await Playlist.sync({force: initDatabase})
-  await PlaylistItem.sync({force: initDatabase})
-  await Vote.sync({force: initDatabase})
-  await Play.sync({force: initDatabase})
+  await User.sync({ force: initDatabase })
+  await Track.sync({ force: initDatabase })
+  await Playlist.sync({ force: initDatabase })
+  await PlaylistItem.sync({ force: initDatabase })
+  await Vote.sync({ force: initDatabase })
+  await Play.sync({ force: initDatabase })
   // seed a default playlist
   const [playlist, created] = await Playlist.findOrCreate({
     where: { name: 'default' }
@@ -342,14 +342,15 @@ async function main() {
   soupClient.on('ready', async () => {
     console.log("ready.")
     // playlistPlayer.play()
-    await soupClient.sendChatMessage('Hello. Type `/plb help` for help.')
+    await soupClient.sendChatMessage(`Hello. Type \`${config.commandPrefix} help\` for help.`)
   })
 
   soupClient.on('chatMessage', async function (data) {
     try {
       const { peerId, chatMessage } = data
       // console.log("got chat message: ", data)
-      if (chatMessage.type === 'message' && (matched = chatMessage.text.match(/^\/plb (.*)/))) {
+      const re = new RegExp(`${config.commandPrefix} (.*)`, 'i')
+      if (chatMessage.type === 'message' && (matched = chatMessage.text.match(re))) {
         // console.log("got chat command: ", matched[1])
         chatMessage.text = matched[1]
         await handleCommand(playlist, chatMessage)
@@ -376,7 +377,7 @@ async function main() {
 (async () => {
   try {
     await main()
-  } catch(e) {
+  } catch (e) {
     console.log(e)
   }
 })()
