@@ -55,60 +55,119 @@ class PlaylistPlayer extends EventEmitter {
     ) {isVideo = true}
 
 
+
     let command
+    let args
     if (isVideo) {
       let demux = 'qtdemux name=demux'
       if (track.filepath.match(/\.mkv$/)) {
         demux = 'matroskademux name=demux'
       }
 
-      // ! vp8enc target-bitrate=2000000 deadline=1 cpu-used=4 \
-      // ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
-         // ! x264enc qp-min=18 \
-         // ! rtph264pay pt=${videoPt} ssrc=${videoSSRC} \
+      command = '/usr/bin/ffmpeg'
+      args = [
+        '-re',
+        '-v',
+        'info',
+        '-stream_loop',
+        '0',
+        '-i',
+        `${this.fileRoot}/${track.filepath}`,
+        '-map',
+        '0:a:0',
+        '-acodec',
+        'libopus',
+        '-ab',
+        '128k',
+        '-ac',
+        '2',
+        '-ar',
+        '48000',
+        '-map',
+        '0:v:0',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:v',
+        'libvpx',
+        '-b:v',
+        '2000k',
+        '-deadline',
+        'realtime',
+        '-cpu-used',
+        '4',
+        '-f',
+        'tee',
+        `[select=a:f=rtp:ssrc=${audioSSRC}:payload_type=${audioPt}]rtp://${audioTransportIp}:${audioTransportPort}|[select=v:f=rtp:ssrc=${videoSSRC}:payload_type=${videoPt}]rtp://${videoTransportIp}:${videoTransportPort}\?pkt_size=1200`,
+      ]
 
-      command = `/usr/bin/gst-launch-1.0 \
-        rtpbin name=rtpbin latency=2000 rtp-profile=avpf \
-        filesrc location="${this.fileRoot}/${track.filepath}" \
-         ! ${demux} \
-        demux.video_0 \
-         ! queue \
-         ! decodebin \
-         ! videoconvert \
-         ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
-         ! queue \
-         ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
-         ! rtpbin.send_rtp_sink_0 \
-        rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
-        rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
-        demux.audio_0 \
-         ! queue \
-         ! decodebin \
-         ! audioresample \
-         ! audioconvert \
-         ! opusenc bitrate=128000 \
-         ! queue \
-         ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
-         ! rtpbin.send_rtp_sink_1 \
-        rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
-        rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
-      `
+      // command = `/usr/bin/gst-launch-1.0 \
+      //   rtpbin name=rtpbin latency=2000 rtp-profile=avpf \
+      //   filesrc location="${this.fileRoot}/${track.filepath}" \
+      //    ! ${demux} \
+      //   demux.video_0 \
+      //    ! queue \
+      //    ! decodebin \
+      //    ! videoconvert \
+      //    ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
+      //    ! queue \
+      //    ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
+      //    ! rtpbin.send_rtp_sink_0 \
+      //   rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
+      //   rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
+      //   demux.audio_0 \
+      //    ! queue \
+      //    ! decodebin \
+      //    ! audioresample \
+      //    ! audioconvert \
+      //    ! opusenc bitrate=128000 \
+      //    ! queue \
+      //    ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
+      //    ! rtpbin.send_rtp_sink_1 \
+      //   rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
+      //   rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
+      // `
     } else {
-      command = `/usr/bin/gst-launch-1.0 \
-        rtpbin name=rtpbin latency=2000 rtp-profile=avpf \
-        filesrc location="${this.fileRoot}/${track.filepath}" \
-         ! queue ! decodebin ! audioconvert \
-         ! audioresample \
-         ! audioconvert \
-         ! opusenc bitrate=128000 \
-         ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
-         ! rtpbin.send_rtp_sink_1 \
-        rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
-        rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
-      `
+      command = '/usr/bin/ffmpeg'
+      args = [
+        '-re',
+        '-v',
+        'info',
+        '-stream_loop',
+        '0',
+        '-i',
+        `${this.fileRoot}/${track.filepath}`,
+        '-map',
+        '0:a:0',
+        '-acodec',
+        'libopus',
+        '-ab',
+        '128k',
+        '-ac',
+        '2',
+        '-ar',
+        '48000',
+        '-f',
+        'tee',
+        `[select=a:f=rtp:ssrc=${audioSSRC}:payload_type=${audioPt}]rtp://${audioTransportIp}:${audioTransportPort}\?pkt_size=1200`
+      ]
+
+      // command = `/usr/bin/gst-launch-1.0 \
+      //   rtpbin name=rtpbin latency=2000 rtp-profile=avpf \
+      //   filesrc location="${this.fileRoot}/${track.filepath}" \
+      //    ! queue ! decodebin ! audioconvert \
+      //    ! audioresample \
+      //    ! audioconvert \
+      //    ! opusenc bitrate=128000 \
+      //    ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
+      //    ! rtpbin.send_rtp_sink_1 \
+      //   rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
+      //   rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
+      // `
     }
-    console.log("command:", command)
-    this.soupClient.execGstCommand(command)  
+    // console.log("command:", command)
+    // console.log("args:", args)
+    // this.soupClient.execGstCommand(command)  
+    this.soupClient.execGstCommand2(command, args)  
   }
 
   async getNextPlaylistItem() {
@@ -123,16 +182,16 @@ class PlaylistPlayer extends EventEmitter {
     } else {
       // we have no unplayed items, create a new one from a random track
       const track = await Track.findOne({ state: 'READY', order: [Sequelize.literal('RANDOM()')] })
-      console.log('track:', track)
+      // console.log('track:', track)
       const maxPli = await this.playlist.getPlaylistItems({order: [['sort', 'DESC']], limit: 1})
-      console.log('maxPli:', maxPli)
+      // console.log('maxPli:', maxPli)
       next = await track.createPlaylistItem({
         sort: 1.0 + (maxPli[0] && maxPli[0].sort > 0 ? maxPli[0].sort : 0),
         PlaylistId: this.playlist.id
       })
       next.Track = track
       next = await next.save()
-      console.log('next:', next)
+      // console.log('next:', next)
 
       // next = await this.playlist.getPlaylistItems({include: [Track], order: [Sequelize.literal('RANDOM()')], limit: 1})
       // next = next[0]

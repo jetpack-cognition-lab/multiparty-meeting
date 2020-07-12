@@ -249,10 +249,12 @@ async function main() {
           {model: Track, include: [User, Play, Vote] },
           {model: User}
         ], order: [
-          ['played', 'DESC'],
-          ['sort', 'ASC']
-        ]
+          ['played', 'ASC'],
+          ['sort', 'DESC']
+        ],
+        limit: 40
       })
+      items.reverse()
       // console.log("item:", items[0])
       // console.log("tracks:", items.map(i => i.Track))
       const reply = items.map(i => {

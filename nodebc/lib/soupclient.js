@@ -99,7 +99,7 @@ class SoupClient extends EventEmitter {
         forceKillAfterTimeout: 2000
       })
     }
-    this.gstProcess = null
+    this.gstProcess = undefined
     this.playing = false
   }
 
@@ -119,12 +119,45 @@ class SoupClient extends EventEmitter {
     )
   }
 
-  async execGstCommand(command) {
+  async execGstCommand2(command, args) {
+    console.log("execGstCommand2", command, args)
     try {
-      const result = execa.command(command, {shell: false, env: {'GST_DEBUG': '2'}})
+      const result = execa(command, args)
+
+      result.stdout.pipe(process.stdout)
+      result.stderr.pipe(process.stderr)
 
       result.on('exit', () => {
-        // console.log("exited", result)
+        this.stopProducers()
+        this.gstProcess = null
+        this.playing = false
+        this.emit('play_done')
+      })
+      this.gstProcess = result
+      this.playing = true
+
+      // await result
+      // console.log('res:', result.stdout)
+      // console.log('err:', result.stderr)
+
+    } catch (error) {
+      this.playing = false
+      this.emit('play_done')
+      await stopProducers()      
+      console.log("catched error in execGstCommand: ", error)
+    }
+  }
+
+
+
+  async execGstCommand(command) {
+    try {
+      const result = execa.command(command, {shell: false})
+
+      result.stdout.pipe(process.stdout)
+      result.stderr.pipe(process.stderr)
+
+      result.on('exit', () => {
         this.stopProducers()
         this.gstProcess = null
         this.playing = false
