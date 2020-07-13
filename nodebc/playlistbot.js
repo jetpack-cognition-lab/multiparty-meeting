@@ -285,7 +285,7 @@ async function main() {
         ret += `</tr>`
       })
       ret += `</tbody></table>`
-      ret += playlist.currentItem ? '' : `Playlist is stopped.`
+      ret += playlistPlayer.currentItem ? '' : `Playlist is stopped.`
       await soupClient.sendChatMessage(ret)
     }
 
