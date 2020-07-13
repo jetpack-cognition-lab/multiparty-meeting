@@ -6,9 +6,9 @@ const mkdirp = require('mkdirp')
 const { SoupClient } = require('./lib/soupclient')
 const { PlaylistPlayer } = require('./lib/playlistplayer')
 const { sequelize, User, Track, Playlist, PlaylistItem, Vote, Play } = require('./lib/models/plb-models')
-
+const moment = require('moment')
 const urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/
-
+const Sequelize = require('sequelize')
 const playlistsorter = 0
 
 async function main() {
@@ -126,14 +126,17 @@ async function main() {
   const ensureTrackIsQueued = async (playlist, track, user) => {
     // search for playlistitem that has the track
     const x = await playlist.getPlaylistItems({ order: [['sort', 'DESC']], limit: 1 })
-    console.log("x:", x)
+    // console.log("x:", x)
     let sort = 1.0
     if (x.length > 0) {
       sort = x[0].sort + 1.0
     }
-    console.log("sort:", sort)
-    pli = await playlist.createPlaylistItem({ sort, UserId: user.id, TrackId: track.id })
-      .then(pli => pli.save())
+    // console.log("sort:", sort)
+    pli = await playlist.createPlaylistItem({ sort, TrackId: track.id })
+    if (user) {
+      pli.setUser(user)
+    }
+    await pli.save()
     console.log("pli", pli)
   }
 
@@ -240,7 +243,7 @@ async function main() {
       const filename = `${config.trackDataRoot || '.'}/`
     }
 
-
+    // list
     else if (matched = chatMessage.text.match(/^list/)) {
       // plis = await pl.getPlaylistItems({include: [ {model: Track, include: [User] }]})
 
@@ -257,12 +260,33 @@ async function main() {
       items.reverse()
       // console.log("item:", items[0])
       // console.log("tracks:", items.map(i => i.Track))
-      const reply = items.map(i => {
+
+
+      let ret = `<h3>${playlistPlayer.playlist.name}</h3>`
+      ret += `<table class="playlistbot"><thead><tr><td>id</td><td></td><td>played at</td></tr></thead><tbody>`
+
+      items.forEach(i => {
         // console.log(playlistPlayer.currentItem, i.id)
-        const c = playlistPlayer.currentItem && i.id === playlistPlayer.currentItem.id ? '**' : ''
-        return `* ${c}${i.Track.name} (Plays: ${i.Track.Plays.length})${c} srt:${i.sort} pl:${i.played}`
-      }).join("\n")
-      await soupClient.sendChatMessage(`### Playlist:\n${reply}`)
+        // const c = playlistPlayer.currentItem && i.id === playlistPlayer.currentItem.id ? '**' : ''
+        // return `* ${c}${i.Track.name} (Plays: ${i.Track.Plays.length})${c} srt:${i.sort} pl:${i.played}`
+
+        ret += `<tr>`
+        ret += `<td style="border: 1px solid #888;>`
+        ret += i.Track.id.substr(0, 6)
+        ret += `</td>`
+        ret += `<td>`
+        ret += playlistPlayer.currentItem && i.id === playlistPlayer.currentItem.id ? '🚶<em>' : ''
+        ret += i.Track.name
+        ret += playlistPlayer.currentItem && i.id === playlistPlayer.currentItem.id ? '</em>🚶' : ''
+        ret += `</td>`
+        ret += `<td>`
+        ret += i.played ? `${moment(i.playedAt).format('YYYYMMDDhhmmss')}` : '✴'
+        ret += `</td>`
+        ret += `</tr>`
+      })
+      ret += `</tbody></table>`
+      ret += playlist.currentItem ? '' : `Playlist is stopped.`
+      await soupClient.sendChatMessage(ret)
     }
 
     else if (matched = chatMessage.text.match(/^next/)) {
@@ -277,12 +301,97 @@ async function main() {
       await playlistPlayer.start()
     }
 
+    else if (matched = chatMessage.text.match(/^info/)) {
+      let ret = ''
+      if (playlistPlayer.currentItem) {
+        const plays = await playlistPlayer.currentItem.Track.countPlays()
+        ret += `
+**${playlistPlayer.currentItem.Track.name}**<br>
+<small>url=${playlistPlayer.currentItem.Track.url}<br>
+id=${playlistPlayer.currentItem.Track.id.substr(0, 6)}<br>
+playcount=${plays} </small>
+`
+      } else {
+        ret += "The playlist is stopped."
+      }
+      await soupClient.sendChatMessage(ret)
+    }
+
+    else if (matched = chatMessage.text.match(/^add (......)$/)) {
+      const id = matched[1]
+      const Op = Sequelize.Op
+      const track = await Track.findOne({ where: { id: { [Op.like]: `${id}%` } } })
+      console.log('track:', track)
+      if (!track) {
+        await soupClient.sendChatMessage(`track not found`)
+        return
+      }
+      ensureTrackIsQueued(playlist, track)
+      await soupClient.sendChatMessage(`*${track.name}* is queued to play`)
+    }
+
+    else if (matched = chatMessage.text.match(/^tracks/)) {
+      let tracks = await Track.findAll({ include: [User, Play, Vote], order: [['name', 'ASC']] })
+      let ret = `<table class="playlistbot"><thead><tr><td>id</td><td></td><td>plays</td></tr></thead><tbody>`
+      tracks.forEach(t => {
+        ret += `<tr>`
+        ret += `<td style="border: 1px solid #AAA; background-color: #777">`
+        ret += t.id.substr(0, 6)
+        ret += `</td>`
+        ret += `<td>`
+        ret += t.name
+        ret += `</td>`
+        ret += `<td>`
+        ret += t.Plays.length
+        ret += `</td>`
+        ret += `</tr>`
+      })
+      ret += `</tbody></table>`
+      await soupClient.sendChatMessage(ret)
+
+    }
+
+    else if (matched = chatMessage.text.match(/^dt (......)$/)) {
+      const id = matched[1]
+      const Op = Sequelize.Op
+      const track = await Track.findOne({ where: { id: { [Op.like]: `${id}%` } } })
+      console.log('track:', track)
+      if (!track) {
+        await soupClient.sendChatMessage(`track not found`)
+        return
+      }
+      const playlistItems = await PlaylistItem.findAll({ where: { TrackId: track.id } })
+      playlistItems.forEach(async (pli) => {
+        await pli.destroy()
+      })
+      const plays = await Play.findAll({ where: { TrackId: track.id } })
+      plays.forEach(async (p) => {
+        await p.destroy()
+      })
+      const votes = await Vote.findAll({ where: { TrackId: track.id } })
+      votes.forEach(async (v) => {
+        await v.destroy()
+      })
+      await track.destroy()
+      await soupClient.sendChatMessage(`*${track.name}* has been removed`)
+    }
+
     // unknown
     else {
       await soupClient.sendChatMessage(`### Commands:
-* Add an arbitrary url to the playlist:
+* Add an arbitrary url to the track pool and enqueue it in the current playlist:
 \`\`\`
 ${config.commandPrefix} http://example.com/something_nice
+\`\`\`
+
+* Start player:
+\`\`\`
+${config.commandPrefix} start
+\`\`\`
+
+* Stop player:
+\`\`\`
+${config.commandPrefix} stop
 \`\`\`
 
 * Skip to next item:
@@ -290,20 +399,31 @@ ${config.commandPrefix} http://example.com/something_nice
 ${config.commandPrefix} next
 \`\`\`
 
-* List items:
+* show current playlist (40 items max):
 \`\`\`
 ${config.commandPrefix} list
 \`\`\`
 
-* Stop playing:
+* show current playing track:
 \`\`\`
-${config.commandPrefix} stop
+${config.commandPrefix} info
 \`\`\`
 
-* Start playing:
+* enqueue track:
 \`\`\`
-${config.commandPrefix} start
+${config.commandPrefix} add <track id>
 \`\`\`
+
+* show current track pool:
+\`\`\`
+${config.commandPrefix} tracks
+\`\`\`
+
+* delete track from track pool:
+\`\`\`
+${config.commandPrefix} dt <track id>
+\`\`\`
+
 `
       )
     }

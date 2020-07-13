@@ -15,6 +15,7 @@
     "execa": "^4.0.2",
     "faker": "^4.1.0",
     "mkdirp": "^1.0.4",
+    "moment": "^2.27.0",
     "node-gstreamer-launch": "^0.1.4",
     "sequelize": "^6.2.3",
     "sequelize-cli": "^6.2.0",
