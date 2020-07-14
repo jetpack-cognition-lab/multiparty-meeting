@@ -9,135 +9,52 @@ const { sequelize, User, Track, Playlist, PlaylistItem, Vote, Play } = require('
 const moment = require('moment')
 const urlRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/
 const Sequelize = require('sequelize')
+const Op = Sequelize.Op
 const playlistsorter = 0
-
 async function main() {
 
-  const startYoutubeGst = async function (url) {
-    await soupClient.startProducers()
-    const {
-      videoTransportIp,
-      videoTransportPort,
-      videoTransportRtcpPort,
-      videoPt,
-      videoSSRC,
-      audioTransportIp,
-      audioTransportPort,
-      audioTransportRtcpPort,
-      audioPt,
-      audioSSRC,
-    } = soupClient.transportOpts
-
-    const formatcmd = [
-      '--list-formats',
-      url
-    ]
-
-
-    console.log('getting formats')
-    const formatres = await execa(config.youtubedlbin, formatcmd)
-    console.log('got it', formatres.stdout)
-    lines = formatres.stdout.split(/\n/)
-    let format = null
-    let isVideo = false
-    lines.forEach((line) => {
-      if (line.match(/^format/)) { return }
-      parts = line.split(/\s+/)
-      const f = parts[0]
-      switch (f) {
-        case 'http_mp3_128':
-        case 'mp3':
-        case 'mp3-128':
-          format = f
-          isVideo = false
-          break
-        default:
-          break
-      }
-    })
-    // attempt a youtube donwload if nothing matched
-
-    if (!format) {
-      format = "18"
-      isVideo = true
-    }
-
-    const ytdlcmd = [
-      `-f ${format}`,
-      '-4',
-      '--get-url',
-      url
-    ]
-
-
-    console.log("chosen format", format)
-
-    console.log('getting yturl')
-    const ytres = await execa('/usr/bin/youtube-dl', ytdlcmd)
-    console.log('got it', ytres.stdout)
-    const yturl = ytres.stdout.replace(/([;'"`#$&*?<>\\])/g, "\\$1")
-
-    let command
-
-    if (isVideo) {
-      // ! avdec_aac ! audioconvert \
-      command = `/usr/bin/gst-launch-1.0 \
-        rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
-        souphttpsrc is-live=true location=${yturl} \
-         ! qtdemux name=demux \
-        demux.video_0 \
-         ! queue \
-         ! decodebin \
-         ! videoconvert \
-         ! vp8enc target-bitrate=1000000 deadline=1 cpu-used=4 \
-         ! rtpvp8pay pt=${videoPt} ssrc=${videoSSRC} picture-id-mode=2 \
-         ! rtpbin.send_rtp_sink_0 \
-        rtpbin.send_rtp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportPort} \
-        rtpbin.send_rtcp_src_0 ! udpsink host=${videoTransportIp} port=${videoTransportRtcpPort} sync=false async=false \
-        demux.audio_0 \
-         ! queue \
-         ! decodebin \
-         ! audioresample \
-         ! audioconvert \
-         ! opusenc \
-         ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
-         ! rtpbin.send_rtp_sink_1 \
-        rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
-        rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
-      `
-    } else {
-      command = `/usr/bin/gst-launch-1.0 \
-        rtpbin name=rtpbin latency=1000 rtp-profile=avpf \
-        souphttpsrc is-live=true location=${yturl} \
-         ! queue ! decodebin ! audioconvert \
-         ! audioresample \
-         ! audioconvert \
-         ! opusenc \
-         ! rtpopuspay pt=${audioPt} ssrc=${audioSSRC} \
-         ! rtpbin.send_rtp_sink_1 \
-        rtpbin.send_rtp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportPort} \
-        rtpbin.send_rtcp_src_1 ! udpsink host=${audioTransportIp} port=${audioTransportRtcpPort} sync=false async=false \
-      `
-    }
-    console.log(command)
-    await soupClient.execGstCommand(command)
-  }
-
   const ensureTrackIsQueued = async (playlist, track, user) => {
-    // search for playlistitem that has the track
-    const x = await playlist.getPlaylistItems({ order: [['sort', 'DESC']], limit: 1 })
-    // console.log("x:", x)
-    let sort = 1.0
-    if (x.length > 0) {
+    const count = await playlist.countPlaylistItems()
+    console.log("count:", count)
+    let sort
+    if (count === 0) {
+      // empty playlist
+      sort = 1.0
+    } else if (!playlistPlayer.currentItem) {
+      // stopped playlist, put at end
+      const x = await playlist.getPlaylistItems({ order: [['sort', 'DESC']], limit: 1 })
+      console.log("no current:", x[0].sort)
       sort = x[0].sort + 1.0
+    } else {
+      // we have a currentItem, check for potential next item
+      const currentItem = playlistPlayer.currentItem
+      const next = await playlist.getPlaylistItems({ where: { sort: { [Op.gt]: currentItem.sort } }, order: [['sort', 'ASC']], limit: 1 })
+      if (next.length === 0) {
+        console.log("c:", currentItem.sort)
+        // no next items, put at end
+        sort = currentItem.sort + 1.0
+      } else {
+        // calculate a sort value between current and next
+        const n = next[0]
+        console.log("c + n:", currentItem.sort, n.sort)
+        sort = currentItem.sort + (n.sort - currentItem.sort) / 2
+      }
     }
-    // console.log("sort:", sort)
+    console.log("sort:", sort)
+
+    // const x = await playlist.getPlaylistItems({ order: [['sort', 'DESC']], limit: 1 })
+    // // console.log("x:", x)
+    // let sort = 1.0
+    // if (x.length > 0) {
+    //   sort = x[0].sort + 1.0
+    // }
+    // // console.log("sort:", sort)
     pli = await playlist.createPlaylistItem({ sort, TrackId: track.id })
     if (user) {
       pli.setUser(user)
     }
     await pli.save()
-    console.log("pli", pli)
+    // console.log("pli", pli)
   }
 
   const handleCommand = async function (playlist, chatMessage) {
@@ -252,26 +169,23 @@ async function main() {
           { model: Track, include: [User, Play, Vote] },
           { model: User }
         ], order: [
-          ['played', 'ASC'],
-          ['sort', 'DESC']
+          ['sort', 'ASC']
         ],
-        limit: 40
+        // limit: 500
       })
-      items.reverse()
-      // console.log("item:", items[0])
+      console.log("items:", items.length)
       // console.log("tracks:", items.map(i => i.Track))
 
 
       let ret = `<h3>${playlistPlayer.playlist.name}</h3>`
-      ret += `<table class="playlistbot"><thead><tr><td>id</td><td></td><td>played at</td></tr></thead><tbody>`
+      ret += `<table class="playlistbot"><thead><tr><td>id</td><td></td><td>played at</td><td>sort</td></tr></thead><tbody>`
 
       items.forEach(i => {
         // console.log(playlistPlayer.currentItem, i.id)
         // const c = playlistPlayer.currentItem && i.id === playlistPlayer.currentItem.id ? '**' : ''
         // return `* ${c}${i.Track.name} (Plays: ${i.Track.Plays.length})${c} srt:${i.sort} pl:${i.played}`
-
         ret += `<tr>`
-        ret += `<td style="border: 1px solid #888;>`
+        ret += `<td style="border: 1px solid #888;">`
         ret += i.Track.id.substr(0, 6)
         ret += `</td>`
         ret += `<td>`
@@ -281,6 +195,9 @@ async function main() {
         ret += `</td>`
         ret += `<td>`
         ret += i.played ? `${moment(i.playedAt).format('YYYYMMDDhhmmss')}` : '✴'
+        ret += `</td>`
+        ret += `<td>`
+        ret += `${i.sort}`
         ret += `</td>`
         ret += `</tr>`
       })
@@ -319,14 +236,13 @@ playcount=${plays} </small>
 
     else if (matched = chatMessage.text.match(/^add (......)$/)) {
       const id = matched[1]
-      const Op = Sequelize.Op
       const track = await Track.findOne({ where: { id: { [Op.like]: `${id}%` } } })
       console.log('track:', track)
       if (!track) {
         await soupClient.sendChatMessage(`track not found`)
         return
       }
-      ensureTrackIsQueued(playlist, track)
+      await ensureTrackIsQueued(playlist, track)
       await soupClient.sendChatMessage(`*${track.name}* is queued to play`)
     }
 
@@ -353,7 +269,6 @@ playcount=${plays} </small>
 
     else if (matched = chatMessage.text.match(/^dt (......)$/)) {
       const id = matched[1]
-      const Op = Sequelize.Op
       const track = await Track.findOne({ where: { id: { [Op.like]: `${id}%` } } })
       console.log('track:', track)
       if (!track) {
@@ -374,6 +289,26 @@ playcount=${plays} </small>
       })
       await track.destroy()
       await soupClient.sendChatMessage(`*${track.name}* has been removed`)
+    }
+
+    // clear playlist
+    else if (matched = chatMessage.text.match(/^cpl$/)) {
+      await playlistPlayer.stop()
+      await PlaylistItem.destroy({ where: { PlaylistId: playlist.id } })
+      await soupClient.sendChatMessage(`Playlist *${playlist.name}* has been emptied`)
+    }
+
+    // addN
+    else if (matched = chatMessage.text.match(/^addn (\d*)$/)) {
+      const count = parseInt(matched[1])
+      const items = await playlist.getPlaylistItems({ include: [Track] })
+      const excludeIds = items.map(i => i.Track.id)
+      const tracks = await Track.findAll({ where: { id: { [Op.notIn]: excludeIds } }, limit: count, order: [Sequelize.literal('RANDOM()')] })
+      console.log("tracks:", tracks.map(t => t.name))
+      for (const track of tracks) {
+        await ensureTrackIsQueued(playlist, track)
+      }
+      await soupClient.sendChatMessage(`${tracks.length} Tracks have been added fro mthe pool`)
     }
 
     // unknown
@@ -399,9 +334,19 @@ ${config.commandPrefix} stop
 ${config.commandPrefix} next
 \`\`\`
 
-* show current playlist (40 items max):
+* show current playlist:
 \`\`\`
 ${config.commandPrefix} list
+\`\`\`
+
+* clear current playlist:
+\`\`\`
+${config.commandPrefix} cpl
+\`\`\`
+
+* add N random tracks from the pool to the current playlist:
+\`\`\`
+${config.commandPrefix} addn <N>
 \`\`\`
 
 * show current playing track:

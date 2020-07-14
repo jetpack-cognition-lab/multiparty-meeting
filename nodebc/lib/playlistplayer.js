@@ -1,6 +1,7 @@
 const { EventEmitter } = require('events')
 const { sequelize, User, Track, Playlist, PlaylistItem, Vote } = require('./models/plb-models')
-const { Sequelize } = require('sequelize')
+const Sequelize = require('sequelize')
+const Op = Sequelize.Op
 
 class PlaylistPlayer extends EventEmitter {
   constructor(playlist, fileRoot, soupClient) {
@@ -133,30 +134,25 @@ class PlaylistPlayer extends EventEmitter {
 
   async getNextPlaylistItem() {
     const count = await this.playlist.countPlaylistItems()
-    // if (count === 0) {
-    //   throw new Error('empty playlist')
-    // }
-
-    let next = await this.playlist.getPlaylistItems({ where: { played: false }, include: [Track], order: [['sort', 'ASC']], limit: 1 })
-    if (next.length > 0) {
-      next = next[0]
-    } else {
-      // we have no unplayed items, create a new one from a random track
-      const track = await Track.findOne({ state: 'READY', order: [Sequelize.literal('RANDOM()')] })
-      // console.log('track:', track)
-      const maxPli = await this.playlist.getPlaylistItems({ order: [['sort', 'DESC']], limit: 1 })
-      // console.log('maxPli:', maxPli)
-      next = await track.createPlaylistItem({
-        sort: 1.0 + (maxPli[0] && maxPli[0].sort > 0 ? maxPli[0].sort : 0),
-        PlaylistId: this.playlist.id
-      })
-      next.Track = track
-      next = await next.save()
-      // console.log('next:', next)
-
-      // next = await this.playlist.getPlaylistItems({include: [Track], order: [Sequelize.literal('RANDOM()')], limit: 1})
-      // next = next[0]
+    if (count === 0) {
+      this.soupClient.sendChatMessage(`The playlist is empty`)
+      return
     }
+
+    // if we have a current Item, get the sort value and try to get the next item
+    // if there is none, loop around and get the first (lowest sort) of the playlist.
+    // (for a playlist in random mode (not yet implemented), get a random entry every time)
+    let next
+    if (this.currentItem) {
+      next = await this.playlist.getPlaylistItems({ where: { sort: { [Op.gt]: this.currentItem.sort } }, include: [Track], order: [['sort', 'ASC']], limit: 1 })
+      if (next.length > 0) {
+        next = next[0]
+        return next
+      }
+    }
+    // wrap playlist around
+    next = await this.playlist.getPlaylistItems({ include: [Track], order: [['sort', 'ASC']], limit: 1 })
+    next = next[0]
     return next
   }
 
@@ -170,7 +166,12 @@ class PlaylistPlayer extends EventEmitter {
 
   async stop() {
     this.state = 'STOPPED'
+    if (this.currentItem) {
+      this.currentItem.playedToEnd = false
+      this.currentItem.save()
+    }
     await this.soupClient.stopCurrentTrack()
+    this.currentItem = null
   }
 
 
