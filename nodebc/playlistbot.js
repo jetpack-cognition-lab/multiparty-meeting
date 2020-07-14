@@ -63,9 +63,8 @@ async function main() {
       return
     }
 
-    // play command
+    // submit new track + add it to the playlist
     if (matched = chatMessage.text.match(urlRegex)) {
-      console.log("playlist item url command received")
       const url = matched[1]
 
       const [user, created] = await User.findOrCreate({
@@ -160,7 +159,7 @@ async function main() {
       const filename = `${config.trackDataRoot || '.'}/`
     }
 
-    // list
+    // list playlist items
     else if (matched = chatMessage.text.match(/^list/)) {
       // plis = await pl.getPlaylistItems({include: [ {model: Track, include: [User] }]})
 
@@ -206,18 +205,22 @@ async function main() {
       await soupClient.sendChatMessage(ret)
     }
 
+    // skip item
     else if (matched = chatMessage.text.match(/^next/)) {
       await playlistPlayer.skip()
     }
 
+    // stop current playlist
     else if (matched = chatMessage.text.match(/^stop/)) {
       await playlistPlayer.stop()
     }
 
+    // start current playlist
     else if (matched = chatMessage.text.match(/^start/)) {
       await playlistPlayer.start()
     }
 
+    // info about curren track
     else if (matched = chatMessage.text.match(/^info/)) {
       let ret = ''
       if (playlistPlayer.currentItem) {
@@ -234,6 +237,7 @@ playcount=${plays} </small>
       await soupClient.sendChatMessage(ret)
     }
 
+    // add existing track
     else if (matched = chatMessage.text.match(/^add (......)$/)) {
       const id = matched[1]
       const track = await Track.findOne({ where: { id: { [Op.like]: `${id}%` } } })
@@ -246,6 +250,7 @@ playcount=${plays} </small>
       await soupClient.sendChatMessage(`*${track.name}* is queued to play`)
     }
 
+    // list tracks
     else if (matched = chatMessage.text.match(/^tracks/)) {
       let tracks = await Track.findAll({ include: [User, Play, Vote], order: [['name', 'ASC']] })
       let ret = `<table class="playlistbot"><thead><tr><td>id</td><td></td><td>plays</td></tr></thead><tbody>`
@@ -267,6 +272,7 @@ playcount=${plays} </small>
 
     }
 
+    // delete track
     else if (matched = chatMessage.text.match(/^dt (......)$/)) {
       const id = matched[1]
       const track = await Track.findOne({ where: { id: { [Op.like]: `${id}%` } } })
@@ -310,6 +316,23 @@ playcount=${plays} </small>
       }
       await soupClient.sendChatMessage(`${tracks.length} Tracks have been added fro mthe pool`)
     }
+
+    else if (matched = chatMessage.text.match(/^del (......)$/)) {
+      const id = matched[1]
+      const track = await Track.findOne({ where: { id: { [Op.like]: `${id}%` } } })
+      console.log('track to delete:', track.id)
+      if (!track) {
+        await soupClient.sendChatMessage(`item not found`)
+        return
+      }
+      const playlistItems = await PlaylistItem.findAll({ where: { TrackId: track.id, PlaylistId: playlistPlayer.playlist.id } })
+      for (const pli of playlistItems) {
+        console.log("pli:", pli)
+        await pli.destroy()
+      }
+      await soupClient.sendChatMessage(`*${track.name}* has been removed from playlist.`)
+    }
+
 
     // unknown
     else {
@@ -368,6 +391,12 @@ ${config.commandPrefix} tracks
 \`\`\`
 ${config.commandPrefix} dt <track id>
 \`\`\`
+
+* remove item from current playlist:
+\`\`\`
+${config.commandPrefix} delete <track id>
+\`\`\`
+
 
 `
       )

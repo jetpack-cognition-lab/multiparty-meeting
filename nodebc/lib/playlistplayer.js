@@ -174,7 +174,6 @@ class PlaylistPlayer extends EventEmitter {
     this.currentItem = null
   }
 
-
   async start() {
     if (this.state === 'STOPPED') {
       await this.play()
@@ -183,7 +182,6 @@ class PlaylistPlayer extends EventEmitter {
       this.soupClient.sendChatMessage(`Already started.`)
     }
   }
-
 
   async playNext() {
     if (this.state === 'WAITING') {
