@@ -28,16 +28,16 @@ import LockIcon from '@material-ui/icons/Lock';
 import LockOpenIcon from '@material-ui/icons/LockOpen';
 import Button from '@material-ui/core/Button';
 import Tooltip from '@material-ui/core/Tooltip';
-import { injectStyle } from '../../utils'
+import { injectStyle } from '../../utils';
 
 const keyframeStyles = `
     @keyframes infiniteRotate {
       0% { -webkit-transform: rotate(0deg); }
       100% { -webkit-transform: rotate(360deg); }
     }
-`
+`;
 
-injectStyle(keyframeStyles)
+injectStyle(keyframeStyles);
 
 const styles = (theme) =>
 	({
@@ -52,15 +52,15 @@ const styles = (theme) =>
 			marginLeft                   : 20,
 			[theme.breakpoints.up('sm')] :
 			{
-        position: 'absolute',
-        left: '200px',
-				display : 'block',
-       animation: 'infiniteRotate 10s linear infinite',
+				position  : 'absolute',
+				left      : '200px',
+				display   : 'block',
+				animation : 'infiniteRotate 10s linear infinite'
 			}
 		},
 		divider :
 		{
-			marginLeft : theme.spacing(3),
+			marginLeft : theme.spacing(3)
 		},
 		show :
 		{
@@ -378,7 +378,7 @@ TopBar.propTypes =
 	room               : appPropTypes.Room.isRequired,
 	peersLength        : PropTypes.number,
 	lobbyPeers         : PropTypes.array,
-	permanentTopBar       : PropTypes.bool,
+	permanentTopBar    : PropTypes.bool,
 	myPicture          : PropTypes.string,
 	loggedIn           : PropTypes.bool.isRequired,
 	loginEnabled       : PropTypes.bool.isRequired,
@@ -397,14 +397,14 @@ TopBar.propTypes =
 
 const mapStateToProps = (state) =>
 	({
-		room         : state.room,
-		peersLength  : peersLengthSelector(state),
-		lobbyPeers   : lobbyPeersKeySelector(state),
+		room            : state.room,
+		peersLength     : peersLengthSelector(state),
+		lobbyPeers      : lobbyPeersKeySelector(state),
 		permanentTopBar : state.settings.permanentTopBar,
-		loggedIn     : state.me.loggedIn,
-		loginEnabled : state.me.loginEnabled,
-		myPicture    : state.me.picture,
-		unread       : state.toolarea.unreadMessages +
+		loggedIn        : state.me.loggedIn,
+		loginEnabled    : state.me.loginEnabled,
+		myPicture       : state.me.picture,
+		unread          : state.toolarea.unreadMessages +
 			state.toolarea.unreadFiles
 	});
 
