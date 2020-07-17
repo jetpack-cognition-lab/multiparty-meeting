@@ -38,7 +38,7 @@ export default class PeerAudio extends React.PureComponent
     }
 
     if (this.ref.current) {
-      this.ref.current.volume = audioVolume;
+      this.ref.current.volume = audioVolume ** 2;
     }
   }
 

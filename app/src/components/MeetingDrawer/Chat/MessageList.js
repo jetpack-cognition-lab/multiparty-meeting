@@ -35,10 +35,8 @@ class MessageList extends React.Component
 
 	shouldComponentUpdate(nextProps)
 	{
-		if (nextProps.chat.length !== this.props.chat.length)
-			return true;
-
-		return false;
+		return nextProps.chat.length !== this.props.chat.length
+      || nextProps.showPlaylist !== this.props.showPlaylist
 	}
 
 	componentDidUpdate(prevProps, prevState, shouldScroll)
@@ -65,13 +63,18 @@ class MessageList extends React.Component
 		const {
 			chat,
 			myPicture,
-			classes
+			classes,
+      showPlaylist
 		} = this.props;
+
+    const messages = showPlaylist
+      ? chat
+      : chat.filter(m => m.name !== 'PlaylistBot' && m.text.slice(0, 4) !== '/plb')
 	
 		return (
 			<div className={classes.root} ref={(node) => { this.node = node; }}>
 				{
-					chat.map((message, index) =>
+					messages.map((message, index) =>
 					{
 						const picture = (message.sender === 'response' ?
 							message.picture : myPicture) || EmptyAvatar;
@@ -97,6 +100,7 @@ MessageList.propTypes =
 {
 	chat      : PropTypes.array,
 	myPicture : PropTypes.string,
+  showPlaylist: PropTypes.bool,
 	classes   : PropTypes.object.isRequired
 };
 
