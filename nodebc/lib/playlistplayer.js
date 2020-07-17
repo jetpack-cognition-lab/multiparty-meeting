@@ -48,6 +48,8 @@ class PlaylistPlayer extends EventEmitter {
       audioSSRC,
     } = this.soupClient.transportOpts
 
+    console.log("transportOpts:", this.soupClient.transportOpts)
+
     let isVideo = false
     if (
       track.filepath.match(/\.mkv$/)
@@ -64,6 +66,8 @@ class PlaylistPlayer extends EventEmitter {
       if (track.filepath.match(/\.mkv$/)) {
         demux = 'matroskademux name=demux'
       }
+
+
 
       command = '/usr/bin/ffmpeg'
       args = [
@@ -88,14 +92,42 @@ class PlaylistPlayer extends EventEmitter {
         '0:v:0',
         '-pix_fmt',
         'yuv420p',
+        '-vf',
+        'scale=w=640:h=480:force_original_aspect_ratio=decrease',
+
         '-c:v',
         'libvpx',
         '-b:v',
-        '2000k',
+        '2M',
         '-deadline',
         'realtime',
         '-cpu-used',
         '4',
+
+        // '-strict',
+        // 'experimental',
+        // '-c:v',
+        // 'libvpx-vp9',
+        // '-b:v',
+        // '1M',
+        // '-minrate',
+        // '1M',
+        // '-maxrate',
+        // '1M',
+        // '-deadline',
+        // 'realtime',
+        // '-cpu-used',
+        // '4',
+
+        // '-c:v',
+        // 'libx264',
+        // '-profile:v',
+        // 'baseline',
+        // '-b:v',
+        // '1M',
+        // '-preset',
+        // 'fast',
+
         '-f',
         'tee',
         `[select=a:f=rtp:ssrc=${audioSSRC}:payload_type=${audioPt}]rtp://${audioTransportIp}:${audioTransportPort}|[select=v:f=rtp:ssrc=${videoSSRC}:payload_type=${videoPt}]rtp://${videoTransportIp}:${videoTransportPort}\?pkt_size=1200`,

@@ -19,7 +19,7 @@ class SoupClient extends EventEmitter {
     this.transportOpts = undefined
     this.gstProcess = undefined
     this.playing = false
-    this.peerId = (Math.random() +1).toString(36).substr(2, 7)
+    this.peerId = (Math.random() + 1).toString(36).substr(2, 7)
     this.joined = false
 
     // socketio client
@@ -30,7 +30,7 @@ class SoupClient extends EventEmitter {
       try {
         await sendRequest('closeProducer', { producerId: this.transportOpts.audioProducer.id })
         await sendRequest('closeProducer', { producerId: this.transportOpts.videoProducer.id })
-      } catch(error) {}
+      } catch (error) { }
       // do some cleanup here?
       process.exit(0)
     })
@@ -65,32 +65,32 @@ class SoupClient extends EventEmitter {
     try {
       switch (notification.method) {
         case 'roomReady':
-        {
-          console.log("roomReady received")
-          this.emit(notification.method, notification.data)
-          // join room
-          await this.joinRoom()
-          this.joined = true
-          this.emit('ready')
-          break;
-        }
+          {
+            console.log("roomReady received")
+            this.emit(notification.method, notification.data)
+            // join room
+            await this.joinRoom()
+            this.joined = true
+            this.emit('ready')
+            break;
+          }
         default:
-        {
-          // console.log("notification received", notification)
-          this.emit(notification.method, notification.data)
-          break;
-        }
+          {
+            // console.log("notification received", notification)
+            this.emit(notification.method, notification.data)
+            break;
+          }
       }
     } catch (error) {
       console.error('error on socket "notification" event failed: "', error);
       await sendChatMessage(`Shit: Error ${JSON.stringify(error)}`)
-    }  
+    }
   }
 
   async stopCurrentTrack() {
     // console.log(state.gstProcess)
     console.log("stop track")
-    await this.stopProducers()      
+    await this.stopProducers()
 
     // await sendRequest('pauseProducer', { producerId: state.transportOpts.audioProducer.id })
     // await sendRequest('pauseProducer', { producerId: state.transportOpts.videoProducer.id })
@@ -143,7 +143,7 @@ class SoupClient extends EventEmitter {
     } catch (error) {
       this.playing = false
       this.emit('play_done')
-      await stopProducers()      
+      await stopProducers()
       console.log("catched error in execGstCommand: ", error)
     }
   }
@@ -152,7 +152,7 @@ class SoupClient extends EventEmitter {
 
   async execGstCommand(command) {
     try {
-      const result = execa.command(command, {shell: false})
+      const result = execa.command(command, { shell: false })
 
       result.stdout.pipe(process.stdout)
       result.stderr.pipe(process.stderr)
@@ -173,7 +173,7 @@ class SoupClient extends EventEmitter {
     } catch (error) {
       this.playing = false
       this.emit('play_done')
-      await stopProducers()      
+      await stopProducers()
       console.log("catched error in execGstCommand: ", error)
     }
   }
@@ -182,10 +182,10 @@ class SoupClient extends EventEmitter {
     if (this.transportOpts) {
       console.log("stopproducers")
 
-      await this.sendRequest('closeProducer', {producerId: this.transportOpts.audioProducer.id }).catch(e => console.log(e))
-      await this.sendRequest('closeProducer', {producerId: this.transportOpts.videoProducer.id }).catch(e => console.log(e))
-      await this.sendRequest('closeTransport', {transportId: this.transportOpts.audioTransportId }).catch(e => console.log(e))
-      await this.sendRequest('closeTransport', {transportId: this.transportOpts.videoTransportId }).catch(e => console.log(e))
+      await this.sendRequest('closeProducer', { producerId: this.transportOpts.audioProducer.id }).catch(e => console.log(e))
+      await this.sendRequest('closeProducer', { producerId: this.transportOpts.videoProducer.id }).catch(e => console.log(e))
+      await this.sendRequest('closeTransport', { transportId: this.transportOpts.audioTransportId }).catch(e => console.log(e))
+      await this.sendRequest('closeTransport', { transportId: this.transportOpts.videoTransportId }).catch(e => console.log(e))
     }
   }
 
@@ -277,14 +277,43 @@ class SoupClient extends EventEmitter {
             {
               name: "VP8",
               mimeType: "video/VP8",
-              payloadType: 101, // "dynamic type" in rtp
+              payloadType: 101,
               clockRate: 90000,
               rtcpFeedback: [
                 { type: 'nack' },
                 { type: 'nack', parameter: 'pli' },
                 { type: 'ccm', parameter: 'fir' },
               ]
-            }
+            },
+            // {
+            //   name: "h264",
+            //   mimeType: "video/h264",
+            //   payloadType: 105,
+            //   clockRate: 90000,
+            //   parameters: {
+            //     'packetization-mode': 1,
+            //     'profile-level-id': '4d0032'
+            //   },
+            //   rtcpFeedback: [
+            //     { type: 'nack' },
+            //     { type: 'nack', parameter: 'pli' },
+            //     { type: 'ccm', parameter: 'fir' },
+            //   ]
+            // },
+            // {
+            //   name: "VP9",
+            //   mimeType: "video/VP9",
+            //   payloadType: 103,
+            //   clockRate: 90000,
+            //   parameters: {
+            //     'profile-id': 2
+            //   },
+            //   rtcpFeedback: [
+            //     { type: 'nack' },
+            //     { type: 'nack', parameter: 'pli' },
+            //     { type: 'ccm', parameter: 'fir' },
+            //   ]
+            // },
           ],
           encodings: [
             {
@@ -293,7 +322,9 @@ class SoupClient extends EventEmitter {
           ]
         }
       }
-    )
+    ).catch(e => { console.error("vp:", e) })
+
+
     // console.log("videoproducer: ", videoProducer)
     // await this.sendRequest('pauseProducer', {producerId: videoProducer.id })
     this.transportOpts = {
