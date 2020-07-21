@@ -193,7 +193,6 @@ class SoupClient extends EventEmitter {
     console.log("startproducers") //, this.transportOpts)
 
     // create a transport for audio
-    //console.log("createPlainTransport")
     const audioTransportInfo = await this.sendRequest(
       'createPlainTransport',
       {
@@ -206,10 +205,7 @@ class SoupClient extends EventEmitter {
     const audioTransportPort = audioTransportInfo.port
     const audioTransportRtcpPort = audioTransportInfo.rtcpPort
 
-    // console.log("audio transportInfo:", audioTransportInfo)
 
-    // create a transport for video
-    // console.log("createPlainTransport")
     const videoTransportInfo = await this.sendRequest(
       'createPlainTransport',
       {
@@ -224,7 +220,7 @@ class SoupClient extends EventEmitter {
 
     // console.log("video transportInfo:", videoTransportInfo)
 
-    // produce
+    // producer
     const audioProducer = await this.sendRequest(
       'produce',
       {
@@ -260,8 +256,6 @@ class SoupClient extends EventEmitter {
         }
       }
     )
-    // console.log("audioproducer: ", audioProducer)
-    // await this.sendRequest('pauseProducer', { producerId: audioProducer.id })
 
     const videoProducer = await this.sendRequest(
       'produce',
