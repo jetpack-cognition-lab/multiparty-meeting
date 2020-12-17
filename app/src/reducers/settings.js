@@ -5,7 +5,7 @@ const initialState =
 	selectedAudioDevice : null,
 	advancedMode        : false,
 	resolution          : 'medium', // low, medium, high, veryhigh, ultra
-	lastN               : 4,
+	lastN               : 10,
 	permanentTopBar		: true
 };
 
