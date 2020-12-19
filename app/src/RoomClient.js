@@ -712,21 +712,33 @@ export default class RoomClient {
 		}
 	}
 
+  async getChatHistory(start=0, length=100) {
+
+    const params = { start, length };
+
+    try {
+      const { chatHistory } = await this.sendRequest('chatHistory', params);
+
+      (chatHistory.length > 0) && store.dispatch(
+          chatActions.addChatHistory(chatHistory));
+    }
+    catch (error) {
+			logger.error('getChatHistory() | failed: %o', error);
+		}
+
+  }
+
 	async getServerHistory() {
 		logger.debug('getServerHistory()');
 
 		try {
 			const {
-				chatHistory,
 				fileHistory,
 				lastNHistory,
 				locked,
 				lobbyPeers,
 				accessCode
 			} = await this.sendRequest('serverHistory');
-
-			(chatHistory.length > 0) && store.dispatch(
-				chatActions.addChatHistory(chatHistory));
 
 			(fileHistory.length > 0) && store.dispatch(
 				fileActions.addFileHistory(fileHistory));
@@ -2145,6 +2157,8 @@ export default class RoomClient {
 			store.dispatch(notificationActions.removeAllNotifications());
 
 			this.getServerHistory();
+
+			this.getChatHistory();
 
 			store.dispatch(requestActions.notify(
 				{
