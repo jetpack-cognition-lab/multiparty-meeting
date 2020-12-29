@@ -2,12 +2,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import { withStyles } from '@material-ui/core/styles';
-// import DOMPurify from 'dompurify'; 
+import DOMPurify from 'dompurify';
 import marked from 'marked';
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
 
 const linkRenderer = new marked.Renderer();
+// const renderer1 = new marked.Renderer();
 
 linkRenderer.link = (href, title, text) =>
 {
@@ -40,7 +41,8 @@ const styles = (theme) =>
 			{
 				margin : 0,
 				'& a' : {
-					color: 'lightblue'
+					color: 'lightblue',
+					target: '_blank',
 				}
 			}
 		},
@@ -80,17 +82,19 @@ const Message = (props) =>
 					className={classes.text}
 					variant='subtitle1'
 					// xeslint-disable-next-line react/no-danger
-					// dangerouslySetInnerHTML={{ __html : DOMPurify.sanitize(
-					// 	marked.parse(
-					// 		text,
-					// 		{ renderer: linkRenderer }
-					// 	),
-					// 	{
-					// 		ALLOWED_TAGS : [ 'a' ],
-					// 		ALLOWED_ATTR : [ 'href', 'target', 'title' ]
-					// 	}
-					// ) }}
-					dangerouslySetInnerHTML={{ __html: marked(text) }}
+		/* 
+					dangerouslySetInnerHTML={{ __html : DOMPurify.sanitize(
+						marked.parse(
+							text,
+							{ renderer: linkRenderer }
+						),
+						{
+							ALLOWED_TAGS : [ 'a' ],
+							ALLOWED_ATTR : [ 'href', 'target', 'title' ]
+						}
+					) }}
+					*/
+					dangerouslySetInnerHTML={{ __html: marked(text, {renderer:linkRenderer}) }}
 
 				/>
 				<Typography variant='caption'>{self ? 'Me' : name} - {time}</Typography>
